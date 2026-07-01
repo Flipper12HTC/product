@@ -37,10 +37,10 @@ void loop() {
   ButtonEvent evL = buttonUpdate(btnLeft,  hal::readPin(PIN_BTN_LEFT),  now);
   ButtonEvent evR = buttonUpdate(btnRight, hal::readPin(PIN_BTN_RIGHT), now);
 
-  if (evL == ButtonEvent::PRESS)   { Serial.println("LEFT  — PRESS");    publishButtonPress(ButtonSide::LEFT,  now); }
-  if (evL == ButtonEvent::RELEASE)   Serial.println("LEFT  — RELEASE");
-  if (evR == ButtonEvent::PRESS)   { Serial.println("RIGHT — PRESS");    publishButtonPress(ButtonSide::RIGHT, now); }
-  if (evR == ButtonEvent::RELEASE)   Serial.println("RIGHT — RELEASE");
+  if (evL == ButtonEvent::PRESS)   { Serial.println("LEFT  — PRESS");    publishButtonPress(ButtonSide::LEFT,    now); }
+  if (evL == ButtonEvent::RELEASE) { Serial.println("LEFT  — RELEASE");  publishButtonRelease(ButtonSide::LEFT,  now); }
+  if (evR == ButtonEvent::PRESS)   { Serial.println("RIGHT — PRESS");    publishButtonPress(ButtonSide::RIGHT,   now); }
+  if (evR == ButtonEvent::RELEASE) { Serial.println("RIGHT — RELEASE");  publishButtonRelease(ButtonSide::RIGHT, now); }
 
   mqttLoop();
 }

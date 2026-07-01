@@ -8,6 +8,8 @@
 *.bin
 *.hex
 *.map
+# ...but the CI-built merged image the cabinet flashes IS committed.
+!firmware/build/firmware.bin
 src/secrets.h
 .DS_Store
 Thumbs.db

@@ -20,3 +20,15 @@ file          = "deploy/docker-compose.yml"
 # Generous: first load also builds the frontend + backend images and waits for
 # Postgres/Rapier init before the backend reports healthy.
 ready_timeout = 120
+
+# Flipper-button board. Reads left/right buttons and publishes them over MQTT to
+# the cabinet broker (Mosquitto, published on host :1883); the backend turns
+# them into flipper moves. Merged image, flashed at 0x0. required = false so a
+# missing/asleep board never blocks a load — the keyboard still drives the game.
+# Rebuilt and committed by .github/workflows/firmware.yml.
+[esp32.esp32]
+firmware   = "hardware/firmware/build/firmware.bin"
+chip       = "esp32"
+flash_addr = "0x0"
+baud       = 115200
+required   = false

@@ -17,12 +17,14 @@ export class MqttInputSource implements InputSource {
 
     this.client.on('connect', () => {
       console.log(`[mqtt] connected to ${url}`);
-      this.client!.subscribe('flipper/inputs/#', (err) => {
+      // The ESP32 publishes on pinball/<device_id>/input/button (see
+      // hardware/contracts/README.md). Subscribe across every device id.
+      this.client!.subscribe('pinball/+/input/button', (err) => {
         if (err) {
           console.error('[mqtt] subscribe error:', err);
           return;
         }
-        console.log('[mqtt] subscribed to flipper/inputs/#');
+        console.log('[mqtt] subscribed to pinball/+/input/button');
       });
     });
 
@@ -35,9 +37,36 @@ export class MqttInputSource implements InputSource {
   }
 
   private handleMessage(topic: string, payload: string): void {
-    // TODO: parse topic → emit typed domain events
-    // e.g. flipper/inputs/left/press → pressHandlers('left')
-    console.log(`[mqtt] ${topic} ${payload}`);
+    // Payload contract (hardware/messages/payloads.cpp):
+    //   { "device_id": "...", "side": "L" | "R",
+    //     "event": "press" | "release", "timestamp_ms": <n> }
+    let msg: { side?: unknown; event?: unknown };
+    try {
+      msg = JSON.parse(payload) as { side?: unknown; event?: unknown };
+    } catch {
+      console.warn(`[mqtt] ignoring non-JSON payload on ${topic}: ${payload}`);
+      return;
+    }
+
+    const side = this.parseSide(msg.side);
+    if (side === null) {
+      console.warn(`[mqtt] ignoring message with bad side on ${topic}:`, msg.side);
+      return;
+    }
+
+    if (msg.event === 'press') {
+      for (const cb of this.pressHandlers) cb(side);
+    } else if (msg.event === 'release') {
+      for (const cb of this.releaseHandlers) cb(side);
+    } else {
+      console.warn(`[mqtt] ignoring unknown event on ${topic}:`, msg.event);
+    }
+  }
+
+  private parseSide(raw: unknown): FlipperSide | null {
+    if (raw === 'L' || raw === 'left') return 'left';
+    if (raw === 'R' || raw === 'right') return 'right';
+    return null;
   }
 
   onButtonPress(cb: (side: FlipperSide) => void): void {

@@ -76,6 +76,10 @@ services:
   mosquitto:
     image: eclipse-mosquitto:2
     restart: unless-stopped
+    # Fixed host port so the ESP32 (on the FLIPHETIC_CAB0 Wi-Fi) can publish
+    # button events to the broker. The backend reaches it internally as
+    # mqtt://mosquitto:1883.
+    ports: ["1883:1883"]
     volumes:
       - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
     healthcheck:
