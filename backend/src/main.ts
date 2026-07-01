@@ -41,13 +41,15 @@ const app = await buildApp({
 
 await startApp(app);
 
-// Physical buttons (ESP32 → MQTT): L1/R1 = flippers, "top" = start, plunger.
+// Physical buttons (ESP32 → MQTT): white right / white left = flippers,
+// black left = start, black right = restart, front white = launch the ball.
 const plunger = createPlungerState();
 mqttInput.onButtonPress((side) => setFlipperState(physics, publisher, side, true));
 mqttInput.onButtonRelease((side) => setFlipperState(physics, publisher, side, false));
 mqttInput.onStart(() => {
   if (state.status !== 'running') startGame(state, physics, publisher);
 });
+mqttInput.onRestart(() => startGame(state, physics, publisher));
 mqttInput.onPlunger((pressed) => {
   if (pressed) plungerPress(plunger);
   else plungerRelease(plunger, state, physics, publisher);

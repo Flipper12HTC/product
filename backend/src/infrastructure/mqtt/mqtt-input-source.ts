@@ -9,8 +9,12 @@ import type { FlipperSide } from '../../domain/flipper.js';
  *   topic  pinball/<device_id>/input/button   payload { "id": "L1", "state": 1 }
  *   topic  pinball/<device_id>/input/plunger  payload { "state": 1 }
  * where state is 1 on press and 0 on release. Button ids map to game roles here
- * (the firmware stays game-agnostic): L1 → left flipper, R1 → right flipper,
- * "top" → start.
+ * (the firmware stays game-agnostic):
+ *   R2 (white right)      → left flipper
+ *   L1 (white left)       → right flipper
+ *   L2 (black left)       → start
+ *   R1 (black right)      → restart
+ *   under_plunger (front white) → launch the ball (hold longer = stronger)
  */
 export class MqttInputSource implements InputSource {
   private client: mqtt.MqttClient | null = null;
@@ -19,6 +23,7 @@ export class MqttInputSource implements InputSource {
   private tiltHandlers: (() => void)[] = [];
   private drainHandlers: (() => void)[] = [];
   private startHandlers: (() => void)[] = [];
+  private restartHandlers: (() => void)[] = [];
   private plungerHandlers: ((pressed: boolean) => void)[] = [];
 
   connect(): void {
@@ -65,19 +70,25 @@ export class MqttInputSource implements InputSource {
 
     if (!topic.endsWith('/input/button')) return;
 
-    // Map the firmware's button id to a game role.
+    // Map the firmware's button id to a game role (physical button in comments).
     switch (msg.id) {
-      case 'L1':
+      case 'R2': // white right → left flipper
         this.dispatchFlipper('left', pressed);
         break;
-      case 'R1':
+      case 'L1': // white left → right flipper
         this.dispatchFlipper('right', pressed);
         break;
-      case 'top':
+      case 'L2': // black left → start a game
         if (pressed) for (const cb of this.startHandlers) cb();
         break;
+      case 'R1': // black right → restart (same as the "R" key)
+        if (pressed) for (const cb of this.restartHandlers) cb();
+        break;
+      case 'under_plunger': // front white → launch the ball (hold longer = stronger)
+        for (const cb of this.plungerHandlers) cb(pressed);
+        break;
       default:
-        // L2/R2/middle/bottom/under_plunger — no game role yet.
+        // top / middle / bottom — no game role yet.
         break;
     }
   }
@@ -103,12 +114,17 @@ export class MqttInputSource implements InputSource {
     this.drainHandlers.push(cb);
   }
 
-  /** Fired when the physical start button ("top") is pressed. */
+  /** Fired when the physical start button (black left) is pressed. */
   onStart(cb: () => void): void {
     this.startHandlers.push(cb);
   }
 
-  /** Fired on plunger press (true) and release (false). */
+  /** Fired when the physical restart button (black right) is pressed. */
+  onRestart(cb: () => void): void {
+    this.restartHandlers.push(cb);
+  }
+
+  /** Fired on launch press (true) and release (false); hold time = force. */
   onPlunger(cb: (pressed: boolean) => void): void {
     this.plungerHandlers.push(cb);
   }
