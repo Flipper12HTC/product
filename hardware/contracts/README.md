@@ -19,8 +19,8 @@ to game roles.
 
 | id              | GPIO | physical      | role |
 |-----------------|------|---------------|------|
-| `R2`            | 25   | white right   | left flipper |
-| `L1`            | 4    | white left    | right flipper |
+| `R2`            | 25   | white right   | right flipper |
+| `L1`            | 4    | white left    | left flipper |
 | `L2`            | 16   | black left    | start |
 | `R1`            | 13   | black right   | restart |
 | `under_plunger` | 33   | front white   | launch the ball (hold longer = stronger) |

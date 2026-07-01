@@ -10,8 +10,8 @@ import type { FlipperSide } from '../../domain/flipper.js';
  *   topic  pinball/<device_id>/input/plunger  payload { "state": 1 }
  * where state is 1 on press and 0 on release. Button ids map to game roles here
  * (the firmware stays game-agnostic):
- *   R2 (white right)      → left flipper
- *   L1 (white left)       → right flipper
+ *   R2 (white right)      → right flipper
+ *   L1 (white left)       → left flipper
  *   L2 (black left)       → start
  *   R1 (black right)      → restart
  *   under_plunger (front white) → launch the ball (hold longer = stronger)
@@ -72,11 +72,11 @@ export class MqttInputSource implements InputSource {
 
     // Map the firmware's button id to a game role (physical button in comments).
     switch (msg.id) {
-      case 'R2': // white right → left flipper
-        this.dispatchFlipper('left', pressed);
-        break;
-      case 'L1': // white left → right flipper
+      case 'R2': // white right → right flipper
         this.dispatchFlipper('right', pressed);
+        break;
+      case 'L1': // white left → left flipper
+        this.dispatchFlipper('left', pressed);
         break;
       case 'L2': // black left → start a game
         if (pressed) for (const cb of this.startHandlers) cb();
