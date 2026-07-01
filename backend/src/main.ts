@@ -6,6 +6,12 @@ import { SolanaClient } from './infrastructure/blockchain/solana-client.js';
 import { buildApp, startApp, stopApp } from './interfaces/http/app.js';
 import { tickGame } from './application/use-cases/tick-game.js';
 import { setFlipperState } from './application/use-cases/set-flipper-state.js';
+import { startGame } from './application/use-cases/start-game.js';
+import {
+  createPlungerState,
+  plungerPress,
+  plungerRelease,
+} from './application/use-cases/launch-ball.js';
 import { createInitialState } from './domain/game.js';
 
 const physics = new RapierPhysicsWorld();
@@ -35,8 +41,17 @@ const app = await buildApp({
 
 await startApp(app);
 
+// Physical buttons (ESP32 → MQTT): L1/R1 = flippers, "top" = start, plunger.
+const plunger = createPlungerState();
 mqttInput.onButtonPress((side) => setFlipperState(physics, publisher, side, true));
 mqttInput.onButtonRelease((side) => setFlipperState(physics, publisher, side, false));
+mqttInput.onStart(() => {
+  if (state.status !== 'running') startGame(state, physics, publisher);
+});
+mqttInput.onPlunger((pressed) => {
+  if (pressed) plungerPress(plunger);
+  else plungerRelease(plunger, state, physics, publisher);
+});
 mqttInput.connect();
 
 const DT = 1 / 60;

@@ -1,27 +1,28 @@
-# MQTT Contracts
+# MQTT contract (firmware ↔ backend)
 
-This directory contains MQTT message schemas shared between `flipper12-hardware` and `flipper12-backend`.
+The ESP32 firmware is game-agnostic: it just reports which physical input was
+pressed or released. The backend (`backend/src/infrastructure/mqtt/`) maps ids
+to game roles.
 
-## Sync strategy
+## Topics (device → backend)
 
-Schemas are copied from `backend/contracts/mqtt/` with a pinned version marker.
+| Topic                                 | Payload                                  |
+|---------------------------------------|------------------------------------------|
+| `pinball/<device_id>/input/button`    | `{ "id": "L1", "state": 1, "ts": 1234 }` |
+| `pinball/<device_id>/input/plunger`   | `{ "state": 1, "ts": 1234 }`             |
 
-**Current pinned backend version:** `<SHA_PLACEHOLDER>` — update this when syncing.
+- `state`: `1` on press, `0` on release (a flipper stays up while held).
+- `<device_id>` comes from the `DEVICE_ID` build flag (`platformio.ini`); the
+  backend subscribes `pinball/+/input/#`, so any device id matches.
 
-## How to sync
+## Button ids → game role (decided by the backend)
 
-```bash
-# From the monorepo root:
-cp backend/contracts/mqtt/* hardware/contracts/
-# Then update the SHA placeholder above with:
-git -C backend rev-parse HEAD
-```
-
-## Topics
-
-| Topic                                  | Direction         | Schema file             |
-|----------------------------------------|-------------------|-------------------------|
-| `pinball/<device_id>/input/button`     | hardware → backend | `button_press.json`    |
-| `pinball/<device_id>/status`           | hardware → backend | `heartbeat.json`       |
-
-> **Note:** If schema files are not yet present, run the sync command above after the backend contracts are defined.
+| id                | GPIO    | role |
+|-------------------|---------|------|
+| `L1`              | 4       | left flipper |
+| `R1`              | 13      | right flipper |
+| `top`             | 17      | start game |
+| `L2` / `R2`       | 16 / 25 | navigation (unused for now) |
+| `middle` / `bottom` | 18 / 19 | unused for now |
+| `under_plunger`   | 33      | unused for now |
+| plunger           | 32      | launch ball (own topic) |

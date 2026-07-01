@@ -28,18 +28,14 @@ jobs:
       - name: Install PlatformIO and esptool
         run: pip install platformio esptool
 
-      - name: Write secrets.h
-        # WiFi credentials are injected from repo secrets so they never land in
-        # source. They are still embedded in the committed binary, so keep the
-        # FLIPHETIC_CAB0 passphrase dedicated — never reuse an SSH/account one.
-        run: |
-          cat > hardware/src/secrets.h <<EOF
-          #pragma once
-          static const char* WIFI_SSID     = "${{ secrets.WIFI_SSID }}";
-          static const char* WIFI_PASSWORD = "${{ secrets.WIFI_PASSWORD }}";
-          EOF
-
       - name: Build
+        # The Wi-Fi password comes from the WIFI_PASSWORD repo secret, injected
+        # as a build flag so it never lands in source (this repo is public). The
+        # SSID is not secret and is hard-coded in platformio.ini. The password is
+        # still embedded in the committed binary — keep the FLIPHETIC_CAB0
+        # passphrase dedicated, never reuse an SSH/account password for it.
+        env:
+          PLATFORMIO_BUILD_FLAGS: -DWIFI_PASSWORD='"${{ secrets.WIFI_PASSWORD }}"'
         run: pio run --project-dir hardware -e esp32dev
 
       - name: Merge into a single image
@@ -52,10 +48,12 @@ jobs:
             0x10000 "$BUILD/firmware.bin"
 
       - name: Commit the binary
+        # The path filter above already excludes firmware/build/**, so pushing
+        # the binary does not retrigger this workflow (no [skip ci] needed).
         run: |
-          git config user.name  "firmware-ci"
-          git config user.email "firmware-ci@users.noreply.github.com"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add hardware/firmware/build/firmware.bin
           git diff --staged --quiet && echo "no change" && exit 0
-          git commit -m "ci: rebuild ESP32 firmware [skip ci]"
+          git commit -m "chore: update ESP32 firmware binary"
           git push
