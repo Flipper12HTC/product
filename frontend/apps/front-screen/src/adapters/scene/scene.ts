@@ -141,11 +141,19 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
   keyLight.shadow.radius        =  4;
   scene.add(keyLight);
 
-  scene.add(Object.assign(new THREE.DirectionalLight(0xff8833, 5.5), { position: new THREE.Vector3(-8, 18, 6) }));
-  scene.add(Object.assign(new THREE.DirectionalLight(0x0099ff, 4.0), { position: new THREE.Vector3(-10, 8, 16) }));
-  scene.add(Object.assign(new THREE.DirectionalLight(0x00ffee, 3.2), { position: new THREE.Vector3(-2, 14, -20) }));
-  scene.add(Object.assign(new THREE.DirectionalLight(0xffcc00, 4.5), { position: new THREE.Vector3(18, 0.5, 3) }));
-  scene.add(Object.assign(new THREE.DirectionalLight(0xff4488, 2.5), { position: new THREE.Vector3(0, 2, 20) }));
+  // NB: Object3D.position is a read-only property in three r150+ — assigning it
+  // (e.g. via Object.assign(light, { position })) throws "Cannot assign to read
+  // only property 'position'". Set it through the Vector3 instead.
+  const addDirLight = (color: number, intensity: number, x: number, y: number, z: number): void => {
+    const light = new THREE.DirectionalLight(color, intensity);
+    light.position.set(x, y, z);
+    scene.add(light);
+  };
+  addDirLight(0xff8833, 5.5, -8, 18, 6);
+  addDirLight(0x0099ff, 4.0, -10, 8, 16);
+  addDirLight(0x00ffee, 3.2, -2, 14, -20);
+  addDirLight(0xffcc00, 4.5, 18, 0.5, 3);
+  addDirLight(0xff4488, 2.5, 0, 2, 20);
 
   // ── Textures sable ──
   const sandTexLoader = new THREE.TextureLoader();
