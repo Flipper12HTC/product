@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { GLTFLoader, OrbitControls, RoomEnvironment } from 'three/examples/jsm/Addons.js';
+import { GLTFLoader, RoomEnvironment } from 'three/examples/jsm/Addons.js';
 import { TABLE } from '@flipper/contracts';
 import { createPhysicsDebug } from './physics-debug';
 import { createJellyfishBumpers, type JellyfishBumpers } from '../meshes/jellyfish-bumpers';
@@ -91,13 +91,12 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
   scene.background = new THREE.Color(0x1a7ab8);
   scene.fog = new THREE.FogExp2(0x1a6a9a, 0.005);
 
-  const camera = new THREE.PerspectiveCamera(55, RENDER_WIDTH / RENDER_HEIGHT, 0.1, 1000);
-  camera.position.set(0, 32, 36);
-  camera.lookAt(0, 0, 0);
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 1000);
+  // Top-down view: look straight down, with world -Z (the far end of the table)
+  // pointing to the top of the screen.
+  camera.up.set(0, 0, -1);
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(1);
-  renderer.setSize(RENDER_WIDTH, RENDER_HEIGHT, false);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.45;
@@ -109,17 +108,28 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
   scene.environmentIntensity = 0.55;
   pmrem.dispose();
 
-  const controls = new OrbitControls(camera, canvas);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.08;
-  controls.enableRotate  = true;
-  controls.enablePan     = true;
-  controls.enableZoom    = true;
-  controls.minDistance   = 4;
-  controls.maxDistance   = 60;
-  controls.maxPolarAngle = Math.PI * 0.46;
-  controls.target.set(0, 0, 0);
-  controls.update();
+  // Fixed, locked top-down camera centred on the playfield — no OrbitControls,
+  // the cabinet view must not move. fitCamera() picks the height so the whole
+  // table fills the current viewport; it runs on init and on every resize.
+  const VIEW_CENTER = new THREE.Vector3(0, 0, -0.5);
+  const TABLE_HALF_X = 5.2; // playfield width/2 + margin
+  const TABLE_HALF_Z = 8.6; // playfield depth/2 + margin
+
+  function fitCamera(): void {
+    const aspect = window.innerWidth / window.innerHeight;
+    camera.aspect = aspect;
+    const vHalf = (camera.fov * Math.PI) / 360; // half vertical FOV (rad)
+    const distForDepth = TABLE_HALF_Z / Math.tan(vHalf);
+    const hHalf = Math.atan(Math.tan(vHalf) * aspect);
+    const distForWidth = TABLE_HALF_X / Math.tan(hHalf);
+    camera.position.set(VIEW_CENTER.x, Math.max(distForDepth, distForWidth), VIEW_CENTER.z);
+    camera.lookAt(VIEW_CENTER);
+    camera.updateProjectionMatrix();
+  }
+
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight, true);
+  fitCamera();
 
   // ── Éclairage Bikini Bottom ──
   scene.add(new THREE.HemisphereLight(0x00ccff, 0xffdd66, 2.8));
@@ -684,22 +694,19 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
   const shakeOffset = new THREE.Vector3();
 
   function applyShake(dt: number): void {
-    if (shakeElapsed <= 0) {
-      if (shakeOffset.lengthSq() > 0) {
-        controls.target.sub(shakeOffset);
-        shakeOffset.set(0, 0, 0);
-      }
-      return;
+    if (shakeElapsed > 0) {
+      shakeElapsed = Math.max(0, shakeElapsed - dt);
+      const factor = (shakeElapsed / 0.28) * 0.6;
+      shakeOffset.set(
+        (Math.random() - 0.5) * factor,
+        0,
+        (Math.random() - 0.5) * factor,
+      );
+    } else if (shakeOffset.lengthSq() > 0) {
+      shakeOffset.set(0, 0, 0);
     }
-    shakeElapsed = Math.max(0, shakeElapsed - dt);
-    const factor = (shakeElapsed / 0.28) * 0.12;
-    controls.target.sub(shakeOffset);
-    shakeOffset.set(
-      (Math.random() - 0.5) * factor,
-      0,
-      (Math.random() - 0.5) * factor,
-    );
-    controls.target.add(shakeOffset);
+    // Locked camera: jitter only the look-at target, never the position.
+    camera.lookAt(VIEW_CENTER.x + shakeOffset.x, VIEW_CENTER.y, VIEW_CENTER.z + shakeOffset.z);
   }
 
   const startTime = performance.now();
@@ -711,7 +718,6 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
     lastRenderMs = now;
     const t = (now - startTime) * 0.001;
 
-    controls.update();
     tickBubblesLarge(t);
     tickBubblesSmall(t);
     tickInserts(t);
@@ -743,7 +749,9 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
   });
 
   function resize(): void {
-    // Résolution fixe — le CSS letterboxe pour s'adapter à l'écran.
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight, true);
+    fitCamera();
   }
 
   return {
