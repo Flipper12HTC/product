@@ -1,0 +1,115 @@
+# Fliphetic deployment for Flipper 12.
+#
+# Three nginx services serve the three built screen apps and reverse-proxy
+# /ws, /game and /scores to the backend. The backend (Fastify + Rapier physics
+# + WebSocket gateway) runs alongside Mosquitto, Postgres and Redis. Screens do
+# NOT depend on the backend, so they always come up and render — the live game
+# feed simply attaches once the backend is healthy.
+services:
+  # ---- Screens (published on ephemeral host ports; the cabinet resolves them) ----
+  front:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.frontend
+      args: { APP: front-screen }
+    ports: ["0:80"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+
+  back:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.frontend
+      args: { APP: back-screen }
+    ports: ["0:80"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+
+  deco:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.frontend
+      args: { APP: deco-screen }
+    ports: ["0:80"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+
+  # ---- Backend (internal only; screens reach it as http://backend:8080) ----
+  backend:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.backend
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      HOST: "0.0.0.0"
+      NODE_ENV: production
+      MQTT_BROKER_URL: mqtt://mosquitto:1883
+      MQTT_CLIENT_ID: flipper12-backend
+      DATABASE_URL: postgresql://flipper:flipper@postgres:5432/flipper12
+      REDIS_URL: redis://redis:6379
+      SOLANA_RPC_URL: http://localhost:8899
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      mosquitto: { condition: service_started }
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 25s
+
+  # ---- Infra (internal only) ----
+  mosquitto:
+    image: eclipse-mosquitto:2
+    restart: unless-stopped
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -t '$$SYS/#' -C 1 -i healthcheck -W 3"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: flipper
+      POSTGRES_PASSWORD: flipper
+      POSTGRES_DB: flipper12
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flipper -d flipper12"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+volumes:
+  pgdata:

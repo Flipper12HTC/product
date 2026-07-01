@@ -1,0 +1,778 @@
+@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Luckiest+Guy&family=Patrick+Hand&display=swap');
+@import 'tailwindcss';
+@import '@flipper/design-system/theme.css';
+
+/* Custom Krabby Patty font — public/fonts/Krabby Patty.ttf
+   See: https://www.dafont.com/krabby-patty.font */
+@font-face {
+  font-family: 'Krabby Patty';
+  src: url('/fonts/Krabby%20Patty.ttf') format('truetype');
+  font-display: swap;
+}
+
+:root {
+  --sb-yellow: #ffec1f;
+  --sb-yellow-deep: #f7c600;
+  --sb-orange: #ff8a00;
+  --sb-brown: #5b3a17;
+  --sb-brown-deep: #3a230d;
+  --sb-pink: #ff79b0;
+  --sb-red: #e23636;
+  --sb-cyan-light: #cdf4ff;
+  --sb-cyan: #6ed8ff;
+  --sb-blue: #1d8bd6;
+  --sb-blue-deep: #0a4a8a;
+  --sb-sand-top: #fff4d4;
+  --sb-sand: #f7e1a8;
+  --sb-sand-deep: #e6c275;
+  --sb-green: #6dbf3a;
+
+  --font-cartoon: 'Krabby Patty', 'Luckiest Guy', 'Bangers', cursive;
+  --font-cartoon-alt: 'Krabby Patty', 'Bangers', 'Luckiest Guy', cursive;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Patrick Hand', 'Comic Sans MS', cursive, sans-serif;
+  color: #fff;
+  min-height: 100vh;
+  position: relative;
+  background:
+    radial-gradient(ellipse at 50% -10%, #fffbe0 0%, transparent 55%),
+    linear-gradient(180deg,
+      var(--sb-cyan-light) 0%,
+      var(--sb-cyan) 22%,
+      var(--sb-blue) 60%,
+      var(--sb-blue-deep) 100%);
+}
+
+/* ---------- Sun rays (fixed, no rotation = no seam) ---------- */
+body::before {
+  content: '';
+  position: fixed;
+  inset: -10vh -10vw -10vh -10vw;
+  pointer-events: none;
+  background:
+    conic-gradient(from 200deg at 50% -8%,
+      transparent 0deg,
+      rgba(255, 255, 220, 0.20) 8deg,
+      transparent 14deg,
+      transparent 22deg,
+      rgba(255, 255, 220, 0.14) 28deg,
+      transparent 34deg,
+      transparent 46deg,
+      rgba(255, 255, 220, 0.20) 52deg,
+      transparent 58deg,
+      transparent 68deg,
+      rgba(255, 255, 220, 0.12) 74deg,
+      transparent 80deg,
+      transparent 96deg,
+      rgba(255, 255, 220, 0.18) 102deg,
+      transparent 110deg,
+      transparent 124deg,
+      rgba(255, 255, 220, 0.14) 130deg,
+      transparent 138deg,
+      transparent 320deg);
+  mask-image: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 40%, transparent 70%);
+  -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 40%, transparent 70%);
+  z-index: 0;
+}
+
+/* ---------- Sandy sea floor (tall, organic) ---------- */
+.sb-sand {
+  position: fixed;
+  left: -5vw;
+  right: -5vw;
+  bottom: 0;
+  height: 38vh;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.sb-sand::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 100%, var(--sb-sand-deep) 0%, transparent 75%),
+    linear-gradient(180deg,
+      transparent 0%,
+      rgba(255, 244, 212, 0.55) 12%,
+      var(--sb-sand-top) 28%,
+      var(--sb-sand) 65%,
+      var(--sb-sand-deep) 100%);
+}
+
+.sb-sand::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -3px;
+  height: 80px;
+  background-image:
+    radial-gradient(ellipse 70px 22px at 4% 100%,  var(--sb-sand-top) 60%, transparent 62%),
+    radial-gradient(ellipse 95px 28px at 14% 100%, var(--sb-sand-top) 60%, transparent 62%),
+    radial-gradient(ellipse 80px 24px at 26% 100%, var(--sb-sand-top) 60%, transparent 62%),
+    radial-gradient(ellipse 110px 32px at 40% 100%, var(--sb-sand-top) 60%, transparent 62%),
+    radial-gradient(ellipse 80px 24px at 54% 100%, var(--sb-sand-top) 60%, transparent 62%),
+    radial-gradient(ellipse 100px 28px at 68% 100%, var(--sb-sand-top) 60%, transparent 62%),
+    radial-gradient(ellipse 70px 22px at 82% 100%, var(--sb-sand-top) 60%, transparent 62%),
+    radial-gradient(ellipse 90px 26px at 95% 100%, var(--sb-sand-top) 60%, transparent 62%);
+}
+
+.sb-sand-speckles {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 38vh;
+  z-index: 2;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle 2px at 12% 70%, rgba(120, 80, 30, 0.35) 100%, transparent),
+    radial-gradient(circle 1.5px at 28% 85%, rgba(120, 80, 30, 0.3) 100%, transparent),
+    radial-gradient(circle 2px at 46% 60%, rgba(120, 80, 30, 0.35) 100%, transparent),
+    radial-gradient(circle 1px at 62% 78%, rgba(120, 80, 30, 0.3) 100%, transparent),
+    radial-gradient(circle 2px at 78% 90%, rgba(120, 80, 30, 0.32) 100%, transparent),
+    radial-gradient(circle 1.5px at 90% 65%, rgba(120, 80, 30, 0.3) 100%, transparent);
+}
+
+/* ---------- Background coral flowers ---------- */
+.sb-flowers {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.sb-flower {
+  position: absolute;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+  animation: sb-flower-sway 6s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+
+@keyframes sb-flower-sway {
+  0%, 100% { transform: rotate(-3deg); }
+  50%      { transform: rotate(3deg); }
+}
+
+/* ---------- Bubbles ---------- */
+.sb-bubbles {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  overflow: hidden;
+}
+
+.sb-bubble {
+  position: absolute;
+  bottom: -80px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.35) 30%, rgba(255,255,255,0.05) 60%, rgba(255,255,255,0) 70%);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.35);
+  animation-name: sb-bubble-rise;
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-in;
+}
+
+@keyframes sb-bubble-rise {
+  0%   { transform: translate(0, 0) scale(0.6); opacity: 0; }
+  10%  { opacity: 0.9; }
+  50%  { transform: translate(20px, -55vh) scale(1); }
+  90%  { opacity: 0.85; }
+  100% { transform: translate(-20px, -115vh) scale(1.05); opacity: 0; }
+}
+
+/* ---------- Decor: houses ---------- */
+.sb-houses {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.sb-house {
+  position: absolute;
+  bottom: 0;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.45));
+  animation: sb-house-bob 6s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+
+.sb-house img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Squidward house: blend out the black PNG background while keeping detail.
+   `lighten` + a brightness boost replaces pure black with the underlying sea
+   color, then re-saturates the statue's blue tones. */
+.sb-house--squidward img {
+  mix-blend-mode: lighten;
+  filter: brightness(1.05) contrast(1.25) saturate(1.3);
+}
+
+.sb-house--patrick img {
+  filter: saturate(1.15) brightness(1.05);
+}
+
+@keyframes sb-house-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+
+/* Bottom-left cluster: Krusty Krab + Sandy dome */
+.sb-house--krusty {
+  left: 1.5vw;
+  bottom: 13vh;
+  width: clamp(220px, 24vw, 420px);
+  animation-delay: -1s;
+}
+.sb-house--sandy {
+  left: clamp(220px, 25vw, 380px);
+  bottom: 8vh;
+  width: clamp(200px, 22vw, 360px);
+  animation-delay: -3s;
+}
+
+/* Bottom-right cluster: Squidward (back-left), Patrick (mid), Bob (front-right) */
+.sb-house--squidward {
+  right: clamp(220px, 24vw, 380px);
+  bottom: 14vh;
+  width: clamp(140px, 14vw, 230px);
+  animation-delay: -2s;
+}
+.sb-house--patrick {
+  right: clamp(140px, 15vw, 240px);
+  bottom: 6vh;
+  width: clamp(150px, 16vw, 260px);
+  animation-delay: -4s;
+  z-index: 1;
+}
+.sb-house--bob {
+  right: 1.5vw;
+  bottom: 9vh;
+  width: clamp(170px, 18vw, 300px);
+  animation-delay: -0.5s;
+}
+
+/* ---------- Main stage (compact, fits in one viewport) ---------- */
+#root {
+  position: relative;
+  z-index: 4;
+  padding-top: 2vh !important;
+  padding-bottom: 38vh !important;  /* leave room for the sand + houses */
+  gap: 0.6rem !important;
+}
+
+/* ---------- Title image ---------- */
+.sb-title-img {
+  width: clamp(220px, 26vw, 420px);
+  height: auto;
+  filter:
+    drop-shadow(0 6px 0 rgba(0, 0, 0, 0.25))
+    drop-shadow(0 12px 24px rgba(0, 0, 0, 0.4));
+  animation: sb-wobble 4s ease-in-out infinite;
+}
+
+@keyframes sb-wobble {
+  0%, 100% { transform: rotate(-2deg) translateY(0); }
+  50%      { transform: rotate(1.5deg) translateY(-4px); }
+}
+
+/* ---------- Banner ---------- */
+.sb-banner {
+  font-family: var(--font-cartoon-alt);
+  letter-spacing: 0.12em;
+  color: #fff;
+  -webkit-text-stroke: 2px var(--sb-brown);
+  text-shadow: 0 4px 0 var(--sb-brown), 0 8px 16px rgba(0,0,0,0.25);
+  transition: opacity 250ms ease, transform 250ms ease;
+}
+
+.sb-banner.is-over {
+  color: var(--sb-red);
+  animation: sb-shake 0.6s ease-in-out 3;
+}
+
+@keyframes sb-shake {
+  0%, 100% { transform: translateX(0) rotate(-1deg); }
+  25%      { transform: translateX(-8px) rotate(-2deg); }
+  75%      { transform: translateX(8px) rotate(1deg); }
+}
+
+/* ---------- Score panel (focal element, Krusty Krab sign vibe) ---------- */
+.sb-score-panel {
+  position: relative;
+  padding: 1rem 3rem 1.2rem;
+  background: linear-gradient(180deg, #fff8d8 0%, #ffe172 70%, #f7c600 100%);
+  border: 5px solid var(--sb-brown);
+  border-radius: 28px;
+  box-shadow:
+    inset 0 -10px 0 rgba(91, 58, 23, 0.18),
+    inset 0 6px 0 rgba(255, 255, 255, 0.6),
+    0 14px 0 var(--sb-brown),
+    0 18px 36px rgba(0, 0, 0, 0.4);
+  transform: rotate(-1deg);
+  min-width: clamp(280px, 32vw, 540px);
+}
+
+/* Bolts on the side of the panel */
+.sb-score-panel::before,
+.sb-score-panel::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 26px;
+  height: 26px;
+  background: radial-gradient(circle at 35% 35%, #fff 0%, #c9c9c9 50%, #6b6b6b 100%);
+  border-radius: 50%;
+  border: 3px solid var(--sb-brown);
+  transform: translateY(-50%);
+  box-shadow: 0 3px 0 rgba(0,0,0,0.3);
+}
+.sb-score-panel::before { left: -16px; }
+.sb-score-panel::after  { right: -16px; }
+
+.sb-score-label {
+  font-family: var(--font-cartoon-alt);
+  letter-spacing: 0.16em;
+  color: var(--sb-brown);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+  font-size: clamp(0.9rem, 1.4vw, 1.2rem);
+  margin-bottom: 0.2rem;
+}
+
+.sb-score-label.is-final {
+  color: var(--sb-red);
+  font-size: clamp(1rem, 1.6vw, 1.4rem);
+  animation: sb-final-flash 1.2s ease-in-out infinite;
+}
+
+@keyframes sb-final-flash {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.05); }
+}
+
+.sb-score-value {
+  font-family: var(--font-cartoon);
+  color: var(--sb-red);
+  -webkit-text-stroke: 3px var(--sb-brown);
+  text-shadow:
+    0 4px 0 var(--sb-brown),
+    0 6px 0 rgba(0,0,0,0.18);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  display: inline-block;
+  transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  font-size: clamp(3rem, 8vw, 6.5rem);
+}
+
+.sb-score-value.is-pulsing {
+  animation: sb-score-pop 380ms ease-out;
+}
+
+@keyframes sb-score-pop {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.18) rotate(-2deg); color: var(--sb-orange); }
+  70%  { transform: scale(0.96) rotate(1deg); }
+  100% { transform: scale(1); }
+}
+
+/* Floating "+points" indicator (inside the panel, top-right corner) */
+.sb-score-popup {
+  position: absolute;
+  right: 0.6rem;
+  top: 0.4rem;
+  font-family: var(--font-cartoon);
+  color: var(--sb-yellow);
+  -webkit-text-stroke: 2px var(--sb-brown);
+  text-shadow: 0 3px 0 var(--sb-brown);
+  font-size: 1.3rem;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 2;
+}
+
+.sb-score-popup.is-active {
+  animation: sb-popup 900ms ease-out forwards;
+}
+
+@keyframes sb-popup {
+  0%   { opacity: 0; transform: translateY(20px) scale(0.6); }
+  20%  { opacity: 1; transform: translateY(0) scale(1.2) rotate(-4deg); }
+  100% { opacity: 0; transform: translateY(-50px) scale(1) rotate(6deg); }
+}
+
+/* ---------- Bottom HUD: multiplier + patties (one compact row) ---------- */
+.sb-hud {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.2rem;
+}
+
+.sb-mult-pill {
+  font-family: var(--font-cartoon);
+  background: linear-gradient(180deg, #ffe172 0%, #f7c600 100%);
+  color: var(--sb-red);
+  -webkit-text-stroke: 2px var(--sb-brown);
+  text-shadow: 0 2px 0 var(--sb-brown);
+  padding: 0.35rem 1rem;
+  border-radius: 999px;
+  border: 3px solid var(--sb-brown);
+  font-size: clamp(1.2rem, 2vw, 1.8rem);
+  box-shadow: 0 4px 0 var(--sb-brown), 0 6px 12px rgba(0,0,0,0.3);
+  transform: rotate(-3deg);
+  animation: sb-mult-wobble 3s ease-in-out infinite;
+}
+
+@keyframes sb-mult-wobble {
+  0%, 100% { transform: rotate(-3deg) translateY(0); }
+  50%      { transform: rotate(2deg) translateY(-3px); }
+}
+
+/* Multiplier pill glows electric while boost is active */
+.sb-mult-pill.is-boosting {
+  background: linear-gradient(180deg, #d6f4ff 0%, var(--sb-cyan) 100%);
+  color: #0a4a8a;
+  box-shadow:
+    0 4px 0 var(--sb-brown),
+    0 0 14px rgba(110, 216, 255, 0.9),
+    0 0 28px rgba(110, 216, 255, 0.6);
+  animation: sb-mult-boost 0.5s ease-in-out infinite;
+}
+
+@keyframes sb-mult-boost {
+  0%, 100% { transform: rotate(-3deg) scale(1); }
+  50%      { transform: rotate(3deg) scale(1.12); }
+}
+
+/* ---------- Boost overlay (x3 jellyfish boost) ---------- */
+.sb-boost {
+  position: fixed;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 14vh;
+  gap: 1rem;
+}
+
+/* Brief cyan screen flash on trigger */
+.sb-boost-flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 30%, rgba(110, 216, 255, 0.55) 0%, transparent 60%);
+  opacity: 0;
+}
+
+.sb-boost.is-active .sb-boost-flash {
+  animation: sb-boost-flash 0.6s ease-out;
+}
+
+@keyframes sb-boost-flash {
+  0%   { opacity: 0; }
+  15%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.sb-boost-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-family: var(--font-cartoon);
+  font-size: clamp(2.4rem, 6vw, 5rem);
+  color: var(--sb-cyan-light);
+  -webkit-text-stroke: 3px var(--sb-brown);
+  text-shadow:
+    0 0 12px rgba(110, 216, 255, 0.95),
+    0 4px 0 var(--sb-brown),
+    0 8px 20px rgba(0, 0, 0, 0.4);
+  transform: scale(0);
+}
+
+.sb-boost.is-active .sb-boost-banner {
+  animation: sb-boost-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+             sb-boost-idle 1.2s ease-in-out 0.6s infinite;
+}
+
+.sb-boost-zap {
+  -webkit-text-stroke: 0;
+  text-shadow: 0 0 16px rgba(255, 247, 155, 0.95);
+  animation: sb-zap-flicker 0.25s steps(2) infinite;
+}
+
+@keyframes sb-zap-flicker {
+  0%, 100% { opacity: 1; transform: rotate(-6deg); }
+  50%      { opacity: 0.5; transform: rotate(6deg); }
+}
+
+@keyframes sb-boost-pop {
+  0%   { transform: scale(0) rotate(-8deg); }
+  70%  { transform: scale(1.25) rotate(4deg); }
+  100% { transform: scale(1) rotate(-2deg); }
+}
+
+@keyframes sb-boost-idle {
+  0%, 100% { transform: scale(1) rotate(-2deg); }
+  50%      { transform: scale(1.06) rotate(2deg); }
+}
+
+/* Countdown bar */
+.sb-boost-bar {
+  width: clamp(220px, 30vw, 480px);
+  height: 16px;
+  background: rgba(10, 74, 138, 0.55);
+  border: 3px solid var(--sb-brown);
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: 0 4px 0 var(--sb-brown), inset 0 2px 4px rgba(0,0,0,0.4);
+  transform: scale(0);
+}
+
+.sb-boost.is-active .sb-boost-bar {
+  animation: sb-boost-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s forwards;
+}
+
+.sb-boost-bar-fill {
+  width: 100%;
+  height: 100%;
+  transform-origin: left center;
+  background: linear-gradient(90deg, var(--sb-yellow) 0%, var(--sb-cyan) 100%);
+  box-shadow: 0 0 12px rgba(110, 216, 255, 0.8);
+}
+
+.sb-patties-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.sb-patties-label {
+  font-family: var(--font-cartoon-alt);
+  font-size: clamp(0.85rem, 1.2vw, 1rem);
+  letter-spacing: 0.1em;
+  color: #fff;
+  -webkit-text-stroke: 1.5px var(--sb-brown);
+  text-shadow: 0 2px 0 var(--sb-brown);
+}
+
+.sb-patties {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.sb-patty {
+  width: clamp(46px, 4.5vw, 64px);
+  height: clamp(46px, 4.5vw, 64px);
+  background: url('/image/KrabbyPatty.png') center / contain no-repeat;
+  transition: opacity 250ms ease, transform 250ms ease, filter 250ms ease;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4));
+  animation: sb-patty-float 3.2s ease-in-out infinite;
+}
+
+.sb-patty:nth-child(2) { animation-delay: -1s; }
+.sb-patty:nth-child(3) { animation-delay: -2s; }
+
+@keyframes sb-patty-float {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50%      { transform: translateY(-5px) rotate(3deg); }
+}
+
+.sb-patty.is-eaten {
+  opacity: 0.25;
+  transform: scale(0.85) rotate(-12deg);
+  filter: grayscale(0.6) drop-shadow(0 2px 0 rgba(0,0,0,0.2));
+  animation: none;
+}
+
+/* ---------- Plunger (visual cue: pull the physical launcher) ---------- */
+.sb-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.sb-cta-label {
+  font-family: var(--font-cartoon);
+  letter-spacing: 0.08em;
+  color: var(--sb-yellow);
+  -webkit-text-stroke: 2px var(--sb-brown);
+  text-shadow: 0 3px 0 var(--sb-brown), 0 6px 14px rgba(0,0,0,0.3);
+  font-size: clamp(1.3rem, 2vw, 2rem);
+  animation: sb-cta-bob 1.4s ease-in-out infinite;
+}
+
+@keyframes sb-cta-bob {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50%      { transform: translateY(-4px) rotate(1deg); }
+}
+
+.sb-plunger {
+  --plunger-w: clamp(220px, 22vw, 360px);
+  position: relative;
+  width: var(--plunger-w);
+  height: calc(var(--plunger-w) * 0.22);
+  pointer-events: none;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4));
+}
+
+/* Wooden track/rail under the plunger */
+.sb-plunger::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 12%;
+  bottom: 18%;
+  height: 14%;
+  background: linear-gradient(180deg, #c98b4d 0%, #8c5a2a 60%, #5e3a18 100%);
+  border: 2.5px solid var(--sb-brown-deep);
+  border-radius: 6px;
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,0.3), inset 0 2px 0 rgba(255,255,255,0.18);
+}
+
+/* Rod + spring container — animated as a whole (pull back then snap forward) */
+.sb-plunger-rod {
+  position: absolute;
+  top: 30%;
+  right: 12%;
+  width: 70%;
+  height: 30%;
+  display: flex;
+  align-items: center;
+  animation: sb-plunger-pull 2.4s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+  transform-origin: right center;
+}
+
+/* The metallic rod */
+.sb-plunger-rod::before {
+  content: '';
+  flex: 1;
+  height: 100%;
+  background: linear-gradient(180deg,
+    #f5f5f5 0%,
+    #dcdcdc 30%,
+    #9a9a9a 55%,
+    #cfcfcf 80%,
+    #f5f5f5 100%);
+  border: 2px solid var(--sb-brown-deep);
+  border-radius: 6px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+}
+
+/* The red knob at the end (handle the player pulls) */
+.sb-plunger-knob {
+  position: absolute;
+  right: -6%;
+  top: 50%;
+  width: 26%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 30%, #ffb1b1 0%, var(--sb-red) 40%, #9d1a1a 100%);
+  border: 3px solid var(--sb-brown-deep);
+  transform: translateY(-50%);
+  box-shadow:
+    inset 0 -6px 0 rgba(0,0,0,0.3),
+    inset 0 4px 0 rgba(255,255,255,0.35),
+    0 4px 0 rgba(0,0,0,0.3);
+}
+
+/* The coiled spring on the left of the rod */
+.sb-plunger-spring {
+  position: absolute;
+  top: 28%;
+  left: 4%;
+  width: 22%;
+  height: 36%;
+  background-image: repeating-linear-gradient(
+    -55deg,
+    #b8b8b8 0px,
+    #b8b8b8 3px,
+    #7a7a7a 3px,
+    #7a7a7a 6px,
+    #f0f0f0 6px,
+    #f0f0f0 9px
+  );
+  border: 2px solid var(--sb-brown-deep);
+  border-radius: 4px;
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.3);
+  /* Spring compresses & releases in sync with the rod */
+  animation: sb-plunger-spring 2.4s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+  transform-origin: left center;
+}
+
+/* Arrow above the knob to indicate the pull direction */
+.sb-plunger-arrow {
+  position: absolute;
+  right: -2%;
+  top: -55%;
+  width: 30%;
+  font-family: var(--font-cartoon);
+  color: var(--sb-yellow);
+  -webkit-text-stroke: 2px var(--sb-brown);
+  text-shadow: 0 3px 0 var(--sb-brown);
+  font-size: clamp(1.4rem, 2vw, 2rem);
+  text-align: center;
+  animation: sb-plunger-arrow 2.4s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+}
+
+@keyframes sb-plunger-pull {
+  0%   { transform: translateX(0); }
+  35%  { transform: translateX(22%); }  /* slow pull-back */
+  55%  { transform: translateX(22%); }  /* held */
+  70%  { transform: translateX(-2%); }  /* snap forward */
+  100% { transform: translateX(0); }
+}
+
+@keyframes sb-plunger-spring {
+  0%   { transform: scaleX(1); }
+  35%  { transform: scaleX(0.45); }  /* compressed */
+  55%  { transform: scaleX(0.45); }
+  70%  { transform: scaleX(1.08); }  /* over-extended */
+  100% { transform: scaleX(1); }
+}
+
+@keyframes sb-plunger-arrow {
+  0%, 100% { transform: translateX(0); opacity: 0.95; }
+  35%      { transform: translateX(20%); opacity: 1; }
+  55%      { transform: translateX(20%); opacity: 1; }
+  70%      { transform: translateX(0); opacity: 0.4; }
+}
+
+/* ---------- Hint ---------- */
+.sb-hint {
+  font-family: 'Patrick Hand', cursive;
+  color: #fff;
+  text-shadow: 0 2px 0 rgba(0,0,0,0.4);
+  font-size: clamp(0.85rem, 1.1vw, 1rem);
+  letter-spacing: 0.08em;
+  opacity: 0.85;
+}
+
+.sb-hidden { display: none !important; }

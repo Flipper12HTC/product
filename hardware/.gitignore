@@ -1,0 +1,15 @@
+.pio/
+.pioenvs/
+.piolibdeps/
+.vscode/
+.clangd/
+*.o
+*.elf
+*.bin
+*.hex
+*.map
+src/secrets.h
+.DS_Store
+Thumbs.db
+.idea/
+*.swp

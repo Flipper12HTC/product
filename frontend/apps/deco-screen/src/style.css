@@ -1,0 +1,17 @@
+@import 'tailwindcss';
+@import '@flipper/design-system/theme.css';
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  overflow: hidden;
+  background: var(--color-arcade-black);
+}
+
+canvas {
+  display: block;
+}

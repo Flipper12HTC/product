@@ -1,0 +1,34 @@
+{
+  "name": "flipper12-frontend",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Flipper 12 frontend — 3D rendering on three physical screens driven by the backend via WebSocket",
+  "scripts": {
+    "dev": "pnpm --filter @flipper/front-screen dev",
+    "dev:front": "pnpm --filter @flipper/front-screen dev",
+    "dev:back": "pnpm --filter @flipper/back-screen dev",
+    "dev:deco": "pnpm --filter @flipper/deco-screen dev",
+    "dev:all": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"**/*.{ts,json,md,css,html}\"",
+    "format:check": "prettier --check \"**/*.{ts,json,md,css,html}\""
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^25.6.0",
+    "eslint": "^10.2.0",
+    "jiti": "^2.6.1",
+    "prettier": "^3.3.0",
+    "typescript": "^5.6.0",
+    "typescript-eslint": "^8.58.2",
+    "vite": "^5.4.21"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  }
+}

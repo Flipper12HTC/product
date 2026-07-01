@@ -1,0 +1,26 @@
+{
+  "name": "@flipper/deco-screen",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 3002",
+    "build": "tsc && vite build",
+    "preview": "vite preview --port 3002",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.2",
+    "@types/three": "^0.183.1",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^5.6.0",
+    "vite": "^5.4.0"
+  },
+  "dependencies": {
+    "@flipper/contracts": "workspace:*",
+    "@flipper/design-system": "workspace:*",
+    "@flipper/game-sources": "workspace:*",
+    "@flipper/ws-client": "workspace:*",
+    "three": "^0.183.2"
+  }
+}

@@ -1,0 +1,22 @@
+[app]
+id          = "flipper12"
+name        = "Flipper 12"
+authors     = ["Flipper 12 — HETIC"]
+description = "Interactive 3D pinball. Real-time Rapier physics on a Fastify backend, streamed over WebSocket to three Three.js screens: the 3D playfield, the scoreboard backglass, and a DMD leaderboard. Play from a keyboard (A/←, D/→ = flippers, Space = start, ↓ = plunger)."
+
+[deploy]
+strategy = "branch"
+ref      = "main"
+
+# Each screen is its own nginx service serving one built app and proxying the
+# backend API/WebSocket on the same origin.
+[screens]
+playfield = { service = "front", port = 80 }
+backglass = { service = "back",  port = 80 }
+dmd       = { service = "deco",  port = 80 }
+
+[compose]
+file          = "deploy/docker-compose.yml"
+# Generous: first load also builds the frontend + backend images and waits for
+# Postgres/Rapier init before the backend reports healthy.
+ready_timeout = 120

@@ -1,0 +1,27 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+
+# Env / secrets
+.env
+.env.local
+.env.*
+!.env.example
+**/secrets.h
+
+# PlatformIO (hardware)
+.pio/
+.pioenvs/
+.piolibdeps/
+
+# Agent tooling
+.claude/

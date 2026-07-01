@@ -1,0 +1,10 @@
+{
+  "name": "@flipper/design-system",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./theme.css",
+  "peerDependencies": {
+    "tailwindcss": ">=4.0.0"
+  }
+}

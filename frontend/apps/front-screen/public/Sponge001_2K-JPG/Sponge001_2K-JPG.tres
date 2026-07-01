@@ -1,0 +1,23 @@
+[gd_resource type="StandardMaterial3D" load_steps=7 format=3 uid="acg_mjvwu24c"]
+
+[ext_resource type="Texture2D" uid="uid://acg_z3914m6k" id="Color" path="./Sponge001_2K-JPG_Color.jpg"]
+[ext_resource type="Texture2D" uid="uid://acg_nokg9hjr" id="AmbientOcclusion" path="./Sponge001_2K-JPG_AmbientOcclusion.jpg"]
+[ext_resource type="Texture2D" uid="uid://acg_s17f2ut8" id="Displacement" path="./Sponge001_2K-JPG_Displacement.jpg"]
+[ext_resource type="Texture2D" uid="uid://acg_i6ehmt0o" id="Roughness" path="./Sponge001_2K-JPG_Roughness.jpg"]
+[ext_resource type="Texture2D" uid="uid://acg_vwjuoxke" id="NormalGL" path="./Sponge001_2K-JPG_NormalGL.jpg"]
+[ext_resource type="Texture2D" uid="uid://acg_67mlgba5" id="Scattering" path="./Sponge001_2K-JPG_Scattering.jpg"]
+[resource]
+albedo_texture = ExtResource("Color")
+ao_enabled = true
+ao_texture = ExtResource("AmbientOcclusion")
+ao_texture_channel = 4
+roughness_texture = ExtResource("Roughness")
+roughness_texture_channel = 4
+normal_texture = ExtResource("NormalGL")
+normal_enabled = true
+heightmap_texture = ExtResource("Displacement")
+heightmap_scale = 1.0
+heightmap_enabled = true
+subsurf_scatter_enabled = true
+subsurf_scatter_strength = 0.25
+subsurf_scatter_texture = ExtResource("Scattering")

@@ -1,0 +1,30 @@
+@theme {
+  --color-arcade-black: #0a0a0f;
+  --color-arcade-dark: #12121a;
+  --color-arcade-panel: #1a1a2e;
+
+  --color-neon-purple: #a855f7;
+  --color-neon-blue: #3b82f6;
+  --color-neon-cyan: #06b6d4;
+  --color-neon-green: #22c55e;
+  --color-neon-pink: #ec4899;
+  --color-neon-yellow: #eab308;
+
+  --color-score-primary: #ffffff;
+  --color-score-muted: #94a3b8;
+
+  --font-display: 'DotGothic16', 'Press Start 2P', monospace;
+  --font-hud: 'Share Tech Mono', monospace;
+  --font-body: system-ui, sans-serif;
+
+  --text-score-xl: clamp(4rem, 10vw, 8rem);
+  --text-score-lg: clamp(2rem, 5vw, 4rem);
+  --text-score-md: clamp(1rem, 2.5vw, 1.5rem);
+  --text-hud-sm: 0.75rem;
+
+  --spacing-hud: 1rem;
+  --spacing-panel: 1.5rem;
+
+  --duration-fast: 100ms;
+  --duration-score: 200ms;
+}

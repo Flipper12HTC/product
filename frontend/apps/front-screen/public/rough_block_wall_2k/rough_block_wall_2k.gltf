@@ -1,0 +1,198 @@
+{
+  "asset": {
+    "generator": "Khronos glTF Blender I/O v1.6.16",
+    "version": "2.0"
+  },
+  "extensionsUsed": [
+    "KHR_texture_transform"
+  ],
+  "extensionsRequired": [
+    "KHR_texture_transform"
+  ],
+  "scene": 0,
+  "scenes": [
+    {
+      "name": "Scene",
+      "nodes": [
+        0
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "mesh": 0,
+      "name": "sphere_gltf"
+    }
+  ],
+  "materials": [
+    {
+      "doubleSided": true,
+      "name": "rough_block_wall",
+      "normalTexture": {
+        "extensions": {
+          "KHR_texture_transform": {
+            "offset": [
+              0,
+              -1
+            ],
+            "scale": [
+              2,
+              2
+            ]
+          }
+        },
+        "index": 0
+      },
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "extensions": {
+            "KHR_texture_transform": {
+              "offset": [
+                0,
+                -1
+              ],
+              "scale": [
+                2,
+                2
+              ]
+            }
+          },
+          "index": 1
+        },
+        "metallicFactor": 0,
+        "metallicRoughnessTexture": {
+          "extensions": {
+            "KHR_texture_transform": {
+              "offset": [
+                0,
+                -1
+              ],
+              "scale": [
+                2,
+                2
+              ]
+            }
+          },
+          "index": 2
+        }
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "Sphere.001",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0,
+            "NORMAL": 1,
+            "TEXCOORD_0": 2
+          },
+          "indices": 3,
+          "material": 0
+        }
+      ]
+    }
+  ],
+  "textures": [
+    {
+      "sampler": 0,
+      "source": 0
+    },
+    {
+      "sampler": 0,
+      "source": 1
+    },
+    {
+      "sampler": 0,
+      "source": 2
+    }
+  ],
+  "images": [
+    {
+      "mimeType": "image/jpeg",
+      "name": "rough_block_wall_nor_gl_4k",
+      "uri": "textures/rough_block_wall_nor_gl_2k.jpg"
+    },
+    {
+      "mimeType": "image/jpeg",
+      "name": "rough_block_wall_diff_4k",
+      "uri": "textures/rough_block_wall_diff_2k.jpg"
+    },
+    {
+      "mimeType": "image/jpeg",
+      "name": "rough_block_wall_rough_4k",
+      "uri": "textures/rough_block_wall_rough_2k.jpg"
+    }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5126,
+      "count": 53897,
+      "max": [
+        1.5212594270706177,
+        1.5298129320144653,
+        1.5213326215744019
+      ],
+      "min": [
+        -1.521260142326355,
+        -1.5337198972702026,
+        -1.521350383758545
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 53897,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 53897,
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5123,
+      "count": 322170,
+      "type": "SCALAR"
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteLength": 646764,
+      "byteOffset": 0
+    },
+    {
+      "buffer": 0,
+      "byteLength": 646764,
+      "byteOffset": 646764
+    },
+    {
+      "buffer": 0,
+      "byteLength": 431176,
+      "byteOffset": 1293528
+    },
+    {
+      "buffer": 0,
+      "byteLength": 644340,
+      "byteOffset": 1724704
+    }
+  ],
+  "samplers": [
+    {
+      "magFilter": 9729,
+      "minFilter": 9987
+    }
+  ],
+  "buffers": [
+    {
+      "byteLength": 2369044,
+      "uri": "rough_block_wall.bin"
+    }
+  ]
+}

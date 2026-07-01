@@ -1,0 +1,39 @@
+{
+  "name": "flipper12-backend",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Central nervous system of Flipper 12: game engine, MQTT bridge, WebSocket gateway, persistence, Solana",
+  "scripts": {
+    "dev": "tsx watch --env-file=.env src/main.ts",
+    "start": "node dist/main.js",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "npx tsx --test \"tests/**/*.test.ts\"",
+    "depcheck": "depcruise src --config .dependency-cruiser.cjs",
+    "format": "prettier --write \"**/*.{ts,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,json,md}\"",
+    "docker:up": "docker compose -f docker/docker-compose.yml up -d",
+    "docker:down": "docker compose -f docker/docker-compose.yml down"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "dependency-cruiser": "^17.3.10",
+    "prettier": "^3.8.2",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d-compat": "^0.15.0",
+    "@fastify/cors": "^11.2.0",
+    "@fastify/websocket": "^11.2.0",
+    "@gltf-transform/core": "^4.3.0",
+    "fastify": "^5.8.4",
+    "ioredis": "^5.10.1",
+    "mqtt": "^5.15.1",
+    "postgres": "^3.4.9"
+  }
+}

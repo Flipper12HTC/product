@@ -1,0 +1,12 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.node.json" },
+    { "path": "./packages/contracts" },
+    { "path": "./packages/ws-client" },
+    { "path": "./packages/game-sources" },
+    { "path": "./apps/front-screen" },
+    { "path": "./apps/back-screen" },
+    { "path": "./apps/deco-screen" }
+  ]
+}

@@ -1,0 +1,13 @@
+BasedOnStyle: Google
+IndentWidth: 2
+ColumnLimit: 100
+AccessModifierOffset: -1
+AllowShortFunctionsOnASingleLine: Empty
+PointerAlignment: Left
+BasedOnStyle: Google
+IndentWidth: 2
+ColumnLimit: 100
+AccessModifierOffset: -1
+AllowShortFunctionsOnASingleLine: Empty
+PointerAlignment: Left
+SpacesBeforeTrailingComments: 2

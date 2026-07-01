@@ -1,0 +1,22 @@
+# syntax=docker/dockerfile:1
+#
+# Builds one screen app of the pnpm monorepo and serves its static bundle with
+# nginx. `APP` selects which app under frontend/apps/ to build (front-screen,
+# back-screen or deco-screen). The build stage is identical for the three
+# services, so Docker reuses its layer cache across them.
+
+FROM node:20-alpine AS build
+ARG APP=front-screen
+WORKDIR /repo
+RUN npm install -g pnpm@9
+# Copy the whole frontend workspace (node_modules/dist excluded via .dockerignore).
+COPY frontend/ ./
+RUN pnpm install --frozen-lockfile
+# Build with vite directly (skips the app's `tsc &&` typecheck step — not needed
+# to produce the runtime bundle) into apps/${APP}/dist.
+RUN pnpm --filter "@flipper/${APP}" exec vite build
+
+FROM nginx:alpine
+ARG APP=front-screen
+COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /repo/apps/${APP}/dist /usr/share/nginx/html
