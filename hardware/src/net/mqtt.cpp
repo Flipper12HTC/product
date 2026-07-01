@@ -16,11 +16,23 @@ static String inputTopic()  { return String("pinball/") + DEVICE_ID + "/input/bu
 static String statusTopic() { return String("pinball/") + DEVICE_ID + "/status"; }
 
 void setupMqtt() {
-  s_mqtt.setServer(MQTT_BROKER, MQTT_PORT);
   s_mqtt.setBufferSize(256);
 }
 
+// Broker host = the Wi-Fi gateway. On the cabinet the ESP joins FLIPHETIC_CAB0,
+// whose AP is the cabinet itself, and Mosquitto is published on that host at
+// :1883 — so the gateway IP is always the broker. This needs no hard-coded IP.
+// MQTT_BROKER in hal/pins.h is only a fallback when there is no gateway.
+static IPAddress brokerAddress() {
+  IPAddress gw = WiFi.gatewayIP();
+  if (static_cast<uint32_t>(gw) != 0) return gw;
+  IPAddress fallback;
+  fallback.fromString(MQTT_BROKER);
+  return fallback;
+}
+
 void ensureMqttConnected() {
+  if (WiFi.status() != WL_CONNECTED) return; // need Wi-Fi (and a gateway) first
   if (s_mqtt.connected()) return;
 
   // Non-blocking: one attempt every 2 s so a missing broker never freezes the
@@ -29,8 +41,11 @@ void ensureMqttConnected() {
   if (now - s_lastReconnectMs < 2000) return;
   s_lastReconnectMs = now;
 
+  const IPAddress broker = brokerAddress();
+  s_mqtt.setServer(broker, MQTT_PORT);
+
   Serial.print("[MQTT] connecting to ");
-  Serial.print(MQTT_BROKER);
+  Serial.print(broker);
   Serial.print(":");
   Serial.println(MQTT_PORT);
 
