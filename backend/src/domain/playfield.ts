@@ -3,7 +3,7 @@ export const PLAYFIELD = {
   depth: 16,
   floorThickness: 0.3,
 
-  // Inner playable area — measured from pinball_map_FINAL.glb after scaling.
+  // Inner playable area — measured from FlipperBase.glb after scaling.
   interior: {
     halfWidth: 4.3,
     halfDepth: 7.8,
@@ -34,23 +34,23 @@ export const PLAYFIELD = {
   },
 
   ball: {
-    radius: 0.2,
+    radius: 0.1,
     // X is auto-overridden from the col_wall_plunger_lane centre at runtime.
-    // Y=1.0: floor top at Z=6 is Y≈0.635; ball radius=0.2 → resting center ≈ Y=0.835; 1.0 gives clearance.
+    // Y=1.0: floor top at Z=6 is Y≈0.635; ball radius=0.10 → resting center ≈ Y=0.735; 1.0 gives clearance.
     spawn: { x: 4.0, y: 1.0, z: 6.0 },
   },
 
-  // Positions extracted from bumper_group_mesh (4 large) + bumper_mini_mesh (2 small).
+  // Positions extracted from bumper_group_mesh (4 large, upper half of the table).
   // Physics space: drain = +Z, far end = -Z, left = -X, right = +X.
+  // The two 'bumper_mini' entries (bm1 at (-0.12, 3.72), bm2 at (-1.87, 0.03)) were
+  // removed: the current map GLB has no bumper meshes, the frontend renders jellyfish
+  // only on b2/b3, and the minis sat right above the flippers — the ball was getting
+  // kicked by invisible bumpers mid-lane.
   bumpers: [
-    // bumper_group — 4 cylindrical bumpers near upper half of table
     { id: 'b1', x: -0.02, z: -2.98, radius: 0.4, scale: 1 },
     { id: 'b2', x: -0.84, z: -3.94, radius: 0.4, scale: 1 },
     { id: 'b3', x: 0.83, z: -4.18, radius: 0.4, scale: 1 },
     { id: 'b4', x: -3.18, z: -6.35, radius: 0.4, scale: 1 },
-    // bumper_mini — 2 smaller obstacles in the lower-middle section
-    { id: 'bm1', x: -0.12, z: 3.72, radius: 0.3, scale: 1 },
-    { id: 'bm2', x: -1.87, z: 0.03, radius: 0.3, scale: 1 },
   ],
 
   drain: {

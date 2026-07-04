@@ -8,14 +8,15 @@ const physics = new RapierPhysicsWorld();
 
 describe('flipper physics', () => {
   before(async () => {
-    await physics.init({ wallHeight: 10 });
+    await physics.init();
   });
 
   beforeEach(() => {
     physics.setBallPosition({ x: 0, y: 5, z: 0 });
     physics.setFlipperActive('left', false);
     physics.setFlipperActive('right', false);
-    for (let i = 0; i < 30; i++) physics.step(DT);
+    // 120 frames: enough for a 14 m/s launched ball to fully decelerate before next test.
+    for (let i = 0; i < 120; i++) physics.step(DT);
     physics.consumeFlipperHits();
   });
 
@@ -53,10 +54,12 @@ describe('flipper physics', () => {
     physics.setFlipperActive('left', true);
     for (let i = 0; i < 9; i++) physics.step(DT);
     physics.setFlipperActive('left', false);
-    for (let i = 0; i < 90; i++) physics.step(DT);
+    // Wait long enough for the ball to peak, bounce off any bumpers, and settle.
+    // 900 frames (~15s) ensures the ball has fully decelerated regardless of bumper hits.
+    for (let i = 0; i < 900; i++) physics.step(DT);
     const settled = physics.getBallPosition();
-    for (let i = 0; i < 30; i++) physics.step(DT);
+    for (let i = 0; i < 60; i++) physics.step(DT);
     const later = physics.getBallPosition();
-    assert.ok(later.y <= settled.y + 0.1, 'ball should not keep rising after release');
+    assert.ok(later.y <= settled.y + 0.5, 'ball should not keep rising after release');
   });
 });

@@ -21,8 +21,8 @@ Publishes on:
 - `pinball/<device_id>/input/plunger` → `{ "state": 1, "ts": 1234 }`
 
 `state` is `1` on press, `0` on release. Ids and their GPIO / game role are in
-[`contracts/README.md`](contracts/README.md). `L1` = left flipper, `R1` = right
-flipper, `top` = start, plunger = launch.
+[`contracts/README.md`](contracts/README.md). `L1` = left flipper, `R2` = right
+flipper, `L2` = start, `R1` = restart, `under_plunger` = launch.
 
 ## Broker & Wi-Fi
 
@@ -54,7 +54,7 @@ pio device monitor
 ```
 platformio.ini          board + libs + non-secret build flags
 include/Config.h         pins, timings, MQTT topics
-lib/Button/              debounced INPUT_PULLUP button (onPress / onRelease)
+lib/Button/              debounced INPUT_PULLUP button (poll() → Edge::Down/Up)
 src/main.cpp             wire each GPIO → button id, connect Wi-Fi + MQTT, loop
 firmware/build/          CI-committed merged binary the cabinet flashes
 contracts/               the MQTT contract shared with the backend

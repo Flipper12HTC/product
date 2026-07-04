@@ -1,10 +1,6 @@
 import type { Scoreboard } from '../../domain/scoreboard';
 import type { ScoreboardView } from '../../application/renderer-orchestrator';
 
-export interface ScoreboardViewOptions {
-  onStart: () => void;
-}
-
 const BANNERS = {
   idle: 'ARE YOU READY KIDS?',
   running: "I'M READY!",
@@ -96,12 +92,12 @@ function spawnHouses(host: HTMLElement): void {
 
 // Idempotent: re-mounting the view (e.g. HMR) shouldn't duplicate background layers.
 function ensureBackgroundLayers(): void {
-  const layers: Array<{ id: string; cls: string; fill?: (el: HTMLElement) => void }> = [
+  const layers: { id: string; cls: string; fill?: (el: HTMLElement) => void }[] = [
     { id: 'sb-flowers', cls: 'sb-flowers', fill: spawnFlowers },
     { id: 'sb-sand',    cls: 'sb-sand' },
     { id: 'sb-sand-speckles', cls: 'sb-sand-speckles' },
     { id: 'sb-houses',  cls: 'sb-houses', fill: spawnHouses },
-    { id: 'sb-bubbles', cls: 'sb-bubbles', fill: (el) => spawnBubbles(el) },
+    { id: 'sb-bubbles', cls: 'sb-bubbles', fill: spawnBubbles },
   ];
   for (const layer of layers) {
     if (document.getElementById(layer.id)) continue;
@@ -121,10 +117,7 @@ function formatScore(n: number): string {
   return n.toLocaleString('en-US');
 }
 
-export function createScoreboardView(
-  root: HTMLElement,
-  options: ScoreboardViewOptions,
-): ScoreboardView {
+export function createScoreboardView(root: HTMLElement): ScoreboardView {
   root.innerHTML = '';
   root.className =
     'flex flex-col items-center justify-center gap-6 p-8 w-full min-h-screen text-center';
@@ -224,10 +217,6 @@ export function createScoreboardView(
 
   root.append(titleImg, banner, scorePanel, hud, cta);
 
-  // Keep onStart wired up so the keyboard forwarder / external triggers
-  // (e.g. SPACE) still work even though there is no on-screen button.
-  void options;
-
   // -----------------------------------------------
   // Score tween: smooth count up from old → new
   // -----------------------------------------------
@@ -297,28 +286,52 @@ export function createScoreboardView(
     });
   }
 
-  // Boost: react only to transitions so the countdown bar restarts cleanly.
+  // Boost: react only to transitions. The countdown bar is driven by rAF against a
+  // wall-clock deadline so it can never empty early or linger — and it only hides when
+  // the backend actually ends the boost (boost_changed active:false).
   let boostActive = false;
+  let boostRaf: number | null = null;
+
+  function stopBoostRaf(): void {
+    if (boostRaf !== null) {
+      cancelAnimationFrame(boostRaf);
+      boostRaf = null;
+    }
+  }
+
   function applyBoost(active: boolean, durationMs: number): void {
     if (active === boostActive) return;
     boostActive = active;
     multPill.classList.toggle('is-boosting', active);
+    // Whole-screen "x3 mode": a body class lets the CSS restyle everything (background
+    // wash, glowing score panel, etc.) so the boost reads as a real game-wide event.
+    document.body.classList.toggle('sb-boost-on', active);
 
     if (active) {
       boostOverlay.classList.remove('sb-hidden');
-      // restart the pop animation
+      // restart the entrance pop
       boostOverlay.classList.remove('is-active');
       void boostOverlay.offsetWidth;
       boostOverlay.classList.add('is-active');
-      // drive the countdown bar with the real boost duration
+
+      const endsAt = performance.now() + durationMs;
+      stopBoostRaf();
+      const tickBar = (now: number): void => {
+        const remaining = Math.max(0, endsAt - now);
+        const frac = durationMs > 0 ? remaining / durationMs : 0;
+        if (boostBarFill) boostBarFill.style.transform = `scaleX(${frac})`;
+        // Keep ticking until empty; the overlay itself is hidden by the backend's
+        // active:false event, so a tiny overshoot just holds the bar at 0.
+        boostRaf = remaining > 0 && boostActive ? requestAnimationFrame(tickBar) : null;
+      };
       if (boostBarFill) {
         boostBarFill.style.transition = 'none';
         boostBarFill.style.transform = 'scaleX(1)';
-        void boostBarFill.offsetWidth;
-        boostBarFill.style.transition = `transform ${durationMs}ms linear`;
-        boostBarFill.style.transform = 'scaleX(0)';
       }
+      boostRaf = requestAnimationFrame(tickBar);
     } else {
+      stopBoostRaf();
+      if (boostBarFill) boostBarFill.style.transform = 'scaleX(0)';
       boostOverlay.classList.remove('is-active');
       boostOverlay.classList.add('sb-hidden');
     }

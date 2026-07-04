@@ -10,55 +10,72 @@ export interface LeaderboardView {
   mount: () => HTMLElement;
 }
 
+// Top 5 only — matches the Krusty Krab sign styling in style.css (.sb-lb-*),
+// so the deco-screen board reads with the same font/look as the back-screen.
+const MAX_ROWS = 5;
+
+function formatPoints(n: number): string {
+  return n.toLocaleString('en-US');
+}
+
 export function createLeaderboardView(): LeaderboardView {
   const root = document.createElement('section');
-  root.className =
-    'fixed inset-0 z-10 flex flex-col items-center justify-center gap-6 ' +
-    'px-[5vw] py-[4vh] text-score-primary font-hud pointer-events-none';
+  root.className = 'sb-leaderboard';
 
   const title = document.createElement('h1');
-  title.className =
-    'text-[clamp(2rem,5vw,5rem)] font-display tracking-[0.3em] text-neon-pink uppercase';
-  title.textContent = '★ HIGH SCORES ★';
+  title.className = 'sb-lb-title';
+  title.textContent = 'HIGH SCORES';
   root.appendChild(title);
 
+  const panel = document.createElement('div');
+  panel.className = 'sb-lb-panel';
+  root.appendChild(panel);
+
   const list = document.createElement('ol');
-  list.className =
-    'flex flex-col w-full max-w-[80vw] gap-2 ' +
-    'text-[clamp(1rem,2.2vw,2rem)]';
-  root.appendChild(list);
+  list.className = 'sb-lb-list';
+  panel.appendChild(list);
+
+  // Track the top score so a fresh #1 gets the celebratory pop highlight.
+  let prevTopKey = '';
 
   return {
     render(entries: ScoreEntry[]): void {
+      const top = entries.slice(0, MAX_ROWS);
+      const nextTopKey = top[0] ? `${top[0].playerId}:${top[0].points}` : '';
+      const topChanged = nextTopKey !== '' && nextTopKey !== prevTopKey;
+      prevTopKey = nextTopKey;
+
       list.innerHTML = '';
-      if (entries.length === 0) {
+
+      if (top.length === 0) {
         const empty = document.createElement('li');
-        empty.className = 'text-center text-score-muted italic';
-        empty.textContent = 'no scores yet — play to claim the throne';
+        empty.className = 'sb-lb-empty';
+        empty.textContent = 'no scores yet — grab a Krabby Patty and play!';
         list.appendChild(empty);
         return;
       }
-      for (const e of entries) {
+
+      top.forEach((e, i) => {
         const li = document.createElement('li');
-        li.className =
-          'grid grid-cols-[3rem_1fr_auto] items-baseline gap-[2vw] ' +
-          'border-b border-white/10 py-[0.4vh]';
+        li.className = 'sb-lb-row';
+        if (i < 3) li.classList.add(`sb-lb-row--${i + 1}`);
+        if (topChanged && i === 0) li.classList.add('is-new');
 
         const rank = document.createElement('span');
-        rank.className = 'text-neon-cyan font-display';
-        rank.textContent = String(e.rank).padStart(2, '0');
+        rank.className = 'sb-lb-rank';
+        rank.textContent = String(e.rank);
 
         const player = document.createElement('span');
-        player.className = 'text-score-muted truncate';
+        player.className = 'sb-lb-player';
         player.textContent = e.playerId;
 
         const points = document.createElement('span');
-        points.className = 'text-score-primary font-display text-right';
-        points.textContent = e.points.toLocaleString();
+        points.className = 'sb-lb-points';
+        points.textContent = formatPoints(e.points);
 
         li.append(rank, player, points);
         list.appendChild(li);
-      }
+      });
     },
     mount(): HTMLElement {
       document.body.appendChild(root);

@@ -44,9 +44,6 @@ importers:
       '@flipper/game-sources':
         specifier: workspace:*
         version: link:../../packages/game-sources
-      '@flipper/ws-client':
-        specifier: workspace:*
-        version: link:../../packages/ws-client
     devDependencies:
       '@tailwindcss/vite':
         specifier: ^4.2.2
@@ -72,9 +69,6 @@ importers:
       '@flipper/game-sources':
         specifier: workspace:*
         version: link:../../packages/game-sources
-      '@flipper/ws-client':
-        specifier: workspace:*
-        version: link:../../packages/ws-client
       three:
         specifier: ^0.183.2
         version: 0.183.2
@@ -106,9 +100,6 @@ importers:
       '@flipper/game-sources':
         specifier: workspace:*
         version: link:../../packages/game-sources
-      '@flipper/ws-client':
-        specifier: workspace:*
-        version: link:../../packages/ws-client
       three:
         specifier: ^0.183.2
         version: 0.183.2

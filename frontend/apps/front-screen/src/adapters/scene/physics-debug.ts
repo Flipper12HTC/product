@@ -50,7 +50,7 @@ function boxWire(hx: number, hy: number, hz: number, color: number): THREE.LineS
 
 function glbWire(obj: THREE.Mesh, color: number): THREE.LineSegments {
   obj.updateWorldMatrix(true, false);
-  const geo = (obj.geometry as THREE.BufferGeometry).clone();
+  const geo = obj.geometry.clone();
   geo.applyMatrix4(obj.matrixWorld);
   return wire(geo, color);
 }
@@ -82,11 +82,12 @@ export function createPhysicsDebug(glbRoot: THREE.Object3D): PhysicsDebugOverlay
   glbRoot.traverse((obj) => {
     if (!(obj instanceof THREE.Mesh)) return;
 
-    if (isWallMesh(obj.name))                              group.add(glbWire(obj, C_WALL));
-    else if (isRampMesh(obj.name))                         group.add(glbWire(obj, C_RAMP));
-    else if (isSolMesh(obj.name))                          group.add(glbWire(obj, C_BOX));
-    else if (obj.name.includes('col_bumper_group'))        group.add(glbWire(obj, C_BUMPER));
-    else if (obj.name === 'flipper_left' || obj.name === 'flipper_right') group.add(glbWire(obj, C_FLIPPER));
+    const mesh = obj as THREE.Mesh<THREE.BufferGeometry>;
+    if (isWallMesh(obj.name))                              group.add(glbWire(mesh, C_WALL));
+    else if (isRampMesh(obj.name))                         group.add(glbWire(mesh, C_RAMP));
+    else if (isSolMesh(obj.name))                          group.add(glbWire(mesh, C_BOX));
+    else if (obj.name.includes('col_bumper_group'))        group.add(glbWire(mesh, C_BUMPER));
+    else if (obj.name === 'flipper_left' || obj.name === 'flipper_right') group.add(glbWire(mesh, C_FLIPPER));
   });
 
   // --- Procedural box walls (same params as rapier-world.ts buildBoundaryWalls) ---
@@ -152,7 +153,8 @@ export function createPhysicsDebug(glbRoot: THREE.Object3D): PhysicsDebugOverlay
 
       const count = trailHistory.length;
       for (let i = 0; i < count; i++) {
-        const p = trailHistory[i]!;
+        const p = trailHistory[i];
+      if (!p) continue;
         trailAttr.setXYZ(i, p.x, p.y, p.z);
       }
       trailAttr.needsUpdate = true;

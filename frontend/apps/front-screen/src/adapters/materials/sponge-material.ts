@@ -20,7 +20,8 @@ export function createSpongeMaterial(): THREE.MeshStandardMaterial {
   // ── Canvas diffuse : jaune SpongeBob + pores sombres ──
   const dc  = document.createElement('canvas');
   dc.width  = dc.height = SIZE;
-  const dctx = dc.getContext('2d')!;
+  const dctx = dc.getContext('2d');
+  if (!dctx) return new THREE.MeshStandardMaterial();
 
   const imgD = dctx.createImageData(SIZE, SIZE);
   for (let py = 0; py < SIZE; py++) {
@@ -62,7 +63,8 @@ export function createSpongeMaterial(): THREE.MeshStandardMaterial {
   // ── Canvas bump : noir dans les pores, blanc sur les rebords ──
   const bc  = document.createElement('canvas');
   bc.width  = bc.height = SIZE;
-  const bctx = bc.getContext('2d')!;
+  const bctx = bc.getContext('2d');
+  if (!bctx) return new THREE.MeshStandardMaterial();
 
   const imgB = bctx.createImageData(SIZE, SIZE);
   for (let py = 0; py < SIZE; py++) {

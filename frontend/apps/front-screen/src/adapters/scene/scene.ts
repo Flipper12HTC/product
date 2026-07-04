@@ -9,7 +9,6 @@ import { createBallTrail } from '../effects/ball-trail';
 import {
   createCausticOverlay,
   createCausticLights,
-  createInsertLights,
   createWaterPuddles,
   createSandRipples,
   createSandDetail,
@@ -151,19 +150,16 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
   keyLight.shadow.radius        =  4;
   scene.add(keyLight);
 
-  // NB: Object3D.position is a read-only property in three r150+ — assigning it
-  // (e.g. via Object.assign(light, { position })) throws "Cannot assign to read
-  // only property 'position'". Set it through the Vector3 instead.
-  const addDirLight = (color: number, intensity: number, x: number, y: number, z: number): void => {
-    const light = new THREE.DirectionalLight(color, intensity);
-    light.position.set(x, y, z);
-    scene.add(light);
+  const addFill = (color: number, intensity: number, x: number, y: number, z: number) => {
+    const l = new THREE.DirectionalLight(color, intensity);
+    l.position.set(x, y, z);
+    scene.add(l);
   };
-  addDirLight(0xff8833, 5.5, -8, 18, 6);
-  addDirLight(0x0099ff, 4.0, -10, 8, 16);
-  addDirLight(0x00ffee, 3.2, -2, 14, -20);
-  addDirLight(0xffcc00, 4.5, 18, 0.5, 3);
-  addDirLight(0xff4488, 2.5, 0, 2, 20);
+  addFill(0xff8833, 5.5,  -8,  18,   6);
+  addFill(0x0099ff, 4.0, -10,   8,  16);
+  addFill(0x00ffee, 3.2,  -2,  14, -20);
+  addFill(0xffcc00, 4.5,  18, 0.5,   3);
+  addFill(0xff4488, 2.5,   0,   2,  20);
 
   // ── Textures sable ──
   const sandTexLoader = new THREE.TextureLoader();
@@ -357,20 +353,21 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
     // Sol sablé — projection planaire en coordonnées monde pour des UVs cohérentes
     const playfield = root.getObjectByName('col_floor_playfield_blue');
     if (playfield instanceof THREE.Mesh) {
-      const posAttr = playfield.geometry.attributes['position'] as THREE.BufferAttribute;
+      const geo     = playfield.geometry as THREE.BufferGeometry;
+      const posAttr = geo.attributes.position as THREE.BufferAttribute;
       const count   = posAttr.count;
       const uvArr   = new Float32Array(count * 2);
       const wm      = playfield.matrixWorld;
       const v       = new THREE.Vector3();
       for (let i = 0; i < count; i++) {
-        v.set(posAttr.getX(i) ?? 0, posAttr.getY(i) ?? 0, posAttr.getZ(i) ?? 0);
+        v.set(posAttr.getX(i), posAttr.getY(i), posAttr.getZ(i));
         v.applyMatrix4(wm);
         uvArr[i * 2]     = (v.x / TABLE.width  + 0.5) * 3;
         uvArr[i * 2 + 1] = (v.z / TABLE.depth  + 0.5) * 5;
       }
       const newUV = new THREE.BufferAttribute(uvArr, 2);
-      playfield.geometry.setAttribute('uv',  newUV);
-      playfield.geometry.setAttribute('uv2', newUV.clone());
+      geo.setAttribute('uv',  newUV);
+      geo.setAttribute('uv2', newUV.clone());
       playfield.material = sandMat;
     }
 
@@ -442,7 +439,8 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
     for (const meshName of [...GRASS_NAMES, ...SPONGE_MESH_NAMES]) {
       const gobj = root.getObjectByName(meshName);
       if (!(gobj instanceof THREE.Mesh)) continue;
-      const posAttr = gobj.geometry.attributes['position'] as THREE.BufferAttribute;
+      const geo     = gobj.geometry as THREE.BufferGeometry;
+      const posAttr = geo.attributes.position as THREE.BufferAttribute;
       const cnt  = posAttr.count;
       const uvA  = new Float32Array(cnt * 2);
       const wm   = gobj.matrixWorld;
@@ -451,7 +449,7 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
       const sz   = bb.getSize(new THREE.Vector3());
       const isFloor = sz.y < sz.x * 0.4 && sz.y < sz.z * 0.4;
       for (let i = 0; i < cnt; i++) {
-        vv.set(posAttr.getX(i) ?? 0, posAttr.getY(i) ?? 0, posAttr.getZ(i) ?? 0);
+        vv.set(posAttr.getX(i), posAttr.getY(i), posAttr.getZ(i));
         vv.applyMatrix4(wm);
         if (isFloor) {
           uvA[i * 2]     = vv.x * GRASS_FREQ;
@@ -463,15 +461,16 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
         }
       }
       const newUV = new THREE.BufferAttribute(uvA, 2);
-      gobj.geometry.setAttribute('uv',  newUV);
-      gobj.geometry.setAttribute('uv2', newUV.clone());
+      geo.setAttribute('uv',  newUV);
+      geo.setAttribute('uv2', newUV.clone());
     }
 
     // ── Reprojection UV cloudssponge ──
     for (const meshName of [...CLOUDS_NAMES]) {
       const gobj = root.getObjectByName(meshName);
       if (!(gobj instanceof THREE.Mesh)) continue;
-      const posAttr = gobj.geometry.attributes['position'] as THREE.BufferAttribute;
+      const geo     = gobj.geometry as THREE.BufferGeometry;
+      const posAttr = geo.attributes.position as THREE.BufferAttribute;
       const cnt = posAttr.count;
       const uvA = new Float32Array(cnt * 2);
       const wm  = gobj.matrixWorld;
@@ -480,7 +479,7 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
       const sz  = bb.getSize(new THREE.Vector3());
       const isFloor = sz.y < sz.x * 0.4 && sz.y < sz.z * 0.4;
       for (let i = 0; i < cnt; i++) {
-        vv.set(posAttr.getX(i) ?? 0, posAttr.getY(i) ?? 0, posAttr.getZ(i) ?? 0);
+        vv.set(posAttr.getX(i), posAttr.getY(i), posAttr.getZ(i));
         vv.applyMatrix4(wm);
         const CLOUDS_SCALE = 3.0;
         if (isFloor) {
@@ -495,8 +494,8 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
         }
       }
       const newUV = new THREE.BufferAttribute(uvA, 2);
-      gobj.geometry.setAttribute('uv',  newUV);
-      gobj.geometry.setAttribute('uv2', newUV.clone());
+      geo.setAttribute('uv',  newUV);
+      geo.setAttribute('uv2', newUV.clone());
     }
 
     // ── Reprojection UV béton (col_wall_panel, col_wall_shooter) ──
@@ -504,7 +503,8 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
     for (const meshName of ['col_wall_panel', 'col_wall_shooter']) {
       const gobj = root.getObjectByName(meshName);
       if (!(gobj instanceof THREE.Mesh)) continue;
-      const posAttr = gobj.geometry.attributes['position'] as THREE.BufferAttribute;
+      const geo     = gobj.geometry as THREE.BufferGeometry;
+      const posAttr = geo.attributes.position as THREE.BufferAttribute;
       const cnt = posAttr.count;
       const uvA = new Float32Array(cnt * 2);
       const wm  = gobj.matrixWorld;
@@ -513,7 +513,7 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
       const sz  = bb.getSize(new THREE.Vector3());
       const isFloor = sz.y < sz.x * 0.4 && sz.y < sz.z * 0.4;
       for (let i = 0; i < cnt; i++) {
-        vv.set(posAttr.getX(i) ?? 0, posAttr.getY(i) ?? 0, posAttr.getZ(i) ?? 0);
+        vv.set(posAttr.getX(i), posAttr.getY(i), posAttr.getZ(i));
         vv.applyMatrix4(wm);
         if (isFloor) {
           uvA[i * 2]     = vv.x * CONCRETE_FREQ;
@@ -525,8 +525,8 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
         }
       }
       const newUV = new THREE.BufferAttribute(uvA, 2);
-      gobj.geometry.setAttribute('uv',  newUV);
-      gobj.geometry.setAttribute('uv2', newUV.clone());
+      geo.setAttribute('uv',  newUV);
+      geo.setAttribute('uv2', newUV.clone());
     }
 
     // ── Reprojection UV béton (col_wall_frame_black) ──
@@ -534,26 +534,24 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
       const FRAME_FREQ = 0.28;
       const gobj = root.getObjectByName('col_wall_frame_black');
       if (gobj instanceof THREE.Mesh) {
-        const posAttr = gobj.geometry.attributes['position'] as THREE.BufferAttribute;
+        const geo     = gobj.geometry as THREE.BufferGeometry;
+        const posAttr = geo.attributes.position as THREE.BufferAttribute;
         const cnt = posAttr.count;
         const uvA = new Float32Array(cnt * 2);
         const wm  = gobj.matrixWorld;
         const vv  = new THREE.Vector3();
         for (let i = 0; i < cnt; i++) {
-          vv.set(posAttr.getX(i) ?? 0, posAttr.getY(i) ?? 0, posAttr.getZ(i) ?? 0);
+          vv.set(posAttr.getX(i), posAttr.getY(i), posAttr.getZ(i));
           vv.applyMatrix4(wm);
           uvA[i * 2]     = vv.x * FRAME_FREQ;
           uvA[i * 2 + 1] = vv.z * FRAME_FREQ;
         }
         const newUV = new THREE.BufferAttribute(uvA, 2);
-        gobj.geometry.setAttribute('uv',  newUV);
-        gobj.geometry.setAttribute('uv2', newUV.clone());
+        geo.setAttribute('uv',  newUV);
+        geo.setAttribute('uv2', newUV.clone());
       }
     }
 
-    const meshNames: string[] = [];
-    root.traverse((o) => { if (o instanceof THREE.Mesh) meshNames.push(o.name); });
-    console.log('[GLB meshes]', meshNames);
 
     tickSingleshots = createCoralSingleshots(root);
 
@@ -601,7 +599,6 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
       };
 
       jellyfishBumpers = createJellyfishBumpers(scene, ['b2', 'b3'], floor.getY);
-      tickInserts      = createInsertLights(scene, floor);
       tickCaustics     = createCausticOverlay(scene, floor);
       tickCausticLights = createCausticLights(scene);
       tickPuddles      = createWaterPuddles(scene, floor);
@@ -622,12 +619,14 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
           model.position.set(SQ_X, floor.getY(SQ_X, SQ_Z) - box.min.y * scale, SQ_Z);
           model.traverse((obj) => {
             if (obj instanceof THREE.Mesh && obj.material instanceof THREE.MeshStandardMaterial) {
-              obj.material = obj.material.clone();
-              obj.material.color.multiplyScalar(0.55);
+              const mat = obj.material.clone() as THREE.MeshStandardMaterial;
+              mat.color.multiplyScalar(0.55);
+              obj.material = mat;
             }
           });
           scene.add(model);
         }, undefined, (err) => {
+          // eslint-disable-next-line no-console
           console.error('[squidward-house] failed to load', err);
         });
       }
@@ -646,12 +645,14 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
           model.position.set(SB_X, floor.getY(SB_X, SB_Z) - box.min.y * scale, SB_Z);
           model.traverse((obj) => {
             if (obj instanceof THREE.Mesh && obj.material instanceof THREE.MeshStandardMaterial) {
-              obj.material = obj.material.clone();
-              obj.material.color.multiplyScalar(0.25);
+              const mat = obj.material.clone() as THREE.MeshStandardMaterial;
+              mat.color.multiplyScalar(0.25);
+              obj.material = mat;
             }
           });
           scene.add(model);
         }, undefined, (err) => {
+          // eslint-disable-next-line no-console
           console.error('[spongebob-house] failed to load', err);
         });
       }
@@ -679,7 +680,6 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
   // ── Effets de fond (indépendants du sol) ──
   const tickBubblesLarge    = createBubbleLayer(scene, 30,  0.30, 0.45);
   const tickBubblesSmall    = createBubbleLayer(scene, 70, 0.15, 0.30);
-  let tickInserts:      (t: number) => void = () => {};
   let tickCaustics:     (t: number) => void = () => {};
   let tickCausticLights:(t: number) => void = () => {};
   let tickPuddles:      (t: number) => void = () => {};
@@ -688,6 +688,14 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
   const tickSky = createOceanSky(scene);
   const trail   = createBallTrail(scene);
   let jellyfishBumpers: JellyfishBumpers = { hit: () => {}, tick: () => {} };
+  // Stable façade: the real bumpers are created asynchronously (after the floor
+  // GLB loads). Exposing the raw `let` via a getter lets callers that destructure
+  // the scene API capture the initial no-op forever; this wrapper always
+  // delegates to whichever instance is currently live.
+  const jellyfishBumpersApi: JellyfishBumpers = {
+    hit: (id) => jellyfishBumpers.hit(id),
+    tick: (dt) => jellyfishBumpers.tick(dt),
+  };
 
   // ── Camera shake ──
   let shakeElapsed = 0;
@@ -720,7 +728,6 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
 
     tickBubblesLarge(t);
     tickBubblesSmall(t);
-    tickInserts(t);
     tickCaustics(t);
     tickCausticLights(t);
     tickPuddles(t);
@@ -744,6 +751,7 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
     const hits = pickRaycaster.intersectObjects(scene.children, true);
     const hit = hits.find((h) => h.object instanceof THREE.Mesh && h.object.name !== '');
     if (hit) {
+      // eslint-disable-next-line no-console
       console.log(`[CLICK] mesh: "${hit.object.name}"`, hit.object);
     }
   });
@@ -768,6 +776,6 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
     updateDebugBall(pos) { debugBallCb?.(pos); },
     addBallTrail(pos) { trail.add(pos); },
     triggerShake() { shakeElapsed = 0.28; },
-    get jellyfishBumpers() { return jellyfishBumpers; },
+    jellyfishBumpers: jellyfishBumpersApi,
   };
 }

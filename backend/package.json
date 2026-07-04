@@ -9,7 +9,7 @@
     "start": "node dist/main.js",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "npx tsx --test \"tests/**/*.test.ts\"",
+    "test": "tsx --test \"tests/**/*.test.ts\"",
     "depcheck": "depcruise src --config .dependency-cruiser.cjs",
     "format": "prettier --write \"**/*.{ts,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,json,md}\"",
@@ -32,7 +32,6 @@
     "@fastify/websocket": "^11.2.0",
     "@gltf-transform/core": "^4.3.0",
     "fastify": "^5.8.4",
-    "ioredis": "^5.10.1",
     "mqtt": "^5.15.1",
     "postgres": "^3.4.9"
   }

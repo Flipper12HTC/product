@@ -13,15 +13,13 @@ enum class Edge : uint8_t { None, Down, Up };
 // for as long as the button is held.
 class DebouncedButton {
  public:
-  explicit DebouncedButton(uint8_t gpio, uint16_t debounceMs = DEBOUNCE_MS_DEFAULT);
+  explicit DebouncedButton(uint8_t gpio, uint16_t debounceMs);
 
   void attach();            // configure the pin and seed the current level
   Edge poll(uint32_t nowMs);
   bool pressed() const { return pressed_; }
 
  private:
-  static constexpr uint16_t DEBOUNCE_MS_DEFAULT = 40;
-
   uint8_t  gpio_;
   uint16_t debounce_;
   bool     pressed_;     // debounced, stable level (true = pressed)

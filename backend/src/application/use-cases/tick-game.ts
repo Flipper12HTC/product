@@ -2,7 +2,14 @@ import type { PhysicsWorld } from '../ports/physics-world.js';
 import type { GamePublisher } from '../ports/game-publisher.js';
 import type { ScoreRepo } from '../ports/score-repo.js';
 import type { GameState } from '../../domain/game.js';
+import {
+  BOOST_DURATION_MS,
+  BOOST_MULTIPLIER,
+  BUMPER_BOOST_THRESHOLD,
+  INITIAL_MULTIPLIER,
+} from '../../domain/game.js';
 import { PLAYFIELD } from '../../domain/playfield.js';
+import { endGame } from './end-game.js';
 
 // Ball drains when it reaches the back wall behind the flippers (Z≈7.5, clearly past the
 // flipper pivot at Z≈6.635). Using the flipper pivot as threshold was too aggressive —
@@ -28,12 +35,21 @@ export function tickGame(
   publisher: GamePublisher,
   dt: number,
   repo?: ScoreRepo,
+  now: number = Date.now(),
 ): void {
   if (state.status !== 'running') return;
 
   physics.step(dt);
   const pos = physics.getBallPosition();
   publisher.broadcast({ type: 'ball_position', payload: pos });
+
+  let boostChanged = false;
+  // Expire the x3 boost on wall-clock time so it survives ball respawns.
+  if (state.boostUntil !== null && now >= state.boostUntil) {
+    state.boostUntil = null;
+    state.multiplier = INITIAL_MULTIPLIER;
+    boostChanged = true;
+  }
 
   const hits = physics.consumeFlipperHits();
   const bumperHits = physics.consumeBumperHits();
@@ -46,6 +62,26 @@ export function tickGame(
     state.score += BUMPER_HIT_POINTS * state.multiplier;
     publisher.broadcast({ type: 'bumper_hit', payload: { id: b.id, x: b.x, z: b.z } });
     scoreChanged = true;
+
+    // Every 10th jellyfish hit (re)triggers a 10s x3 boost.
+    state.bumperHitCount += 1;
+    if (state.bumperHitCount % BUMPER_BOOST_THRESHOLD === 0) {
+      state.multiplier = BOOST_MULTIPLIER;
+      state.boostUntil = now + BOOST_DURATION_MS;
+      boostChanged = true;
+    }
+  }
+
+  if (boostChanged) {
+    const active = state.boostUntil !== null;
+    publisher.broadcast({
+      type: 'boost_changed',
+      payload: {
+        active,
+        multiplier: state.multiplier,
+        durationMs: active ? BOOST_DURATION_MS : 0,
+      },
+    });
   }
   if (scoreChanged) publishScoreUpdate(state, publisher);
   const sep = physics.getLaneSeparatorX();
@@ -60,7 +96,7 @@ export function tickGame(
 
   // Ball is outside the lane when it has crossed the separator toward the main field.
   const outsideLane = sep > 0 ? pos.x < sep : pos.x > sep;
-  // Drain: ball passed flippers (Z≈-1.9) going toward +Z.
+  // Drain: ball passed the flippers (pivots at Z≈6.48) and crossed the drain threshold (Z=7.5).
   const drained = pos.y < PLAYFIELD.drain.yThreshold || (pos.z > DRAIN_Z && outsideLane);
   if (!drained) return;
 
@@ -71,23 +107,7 @@ export function tickGame(
   });
 
   if (state.ballsLeft <= 0) {
-    state.status = 'over';
-    state.endedAt = Date.now();
-    publisher.broadcast({
-      type: 'game_over',
-      payload: { finalScore: state.score },
-    });
-    if (repo && state.score > 0) {
-      void repo
-        .saveFinal({
-          playerId: state.player.wallet ?? 'guest',
-          points: state.score,
-          achievedAt: new Date(),
-        })
-        .catch(() => {
-          /* repo errors are non-fatal */
-        });
-    }
+    endGame(state, publisher, repo, now);
     return;
   }
 

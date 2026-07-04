@@ -477,8 +477,8 @@ body::before {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding-top: 14vh;
-  gap: 1rem;
+  padding-top: 3vh;
+  gap: 0.6rem;
 }
 
 /* Brief cyan screen flash on trigger */
@@ -502,9 +502,9 @@ body::before {
 .sb-boost-banner {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.8rem;
   font-family: var(--font-cartoon);
-  font-size: clamp(2.4rem, 6vw, 5rem);
+  font-size: clamp(1.6rem, 4vw, 3.2rem);
   color: var(--sb-cyan-light);
   -webkit-text-stroke: 3px var(--sb-brown);
   text-shadow:
@@ -776,3 +776,66 @@ body::before {
 }
 
 .sb-hidden { display: none !important; }
+
+/* =========================================================================
+   x3 BOOST MODE — while a boost is active, `body.sb-boost-on` restyles the
+   whole screen so it reads as a real game-wide event (not just a banner).
+   Everything reverts automatically when the class is removed.
+   ========================================================================= */
+
+/* Electric cyan wash from the edges (centre stays readable). */
+body.sb-boost-on::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 45%, transparent 42%, rgba(110, 216, 255, 0.30) 100%),
+    linear-gradient(180deg, rgba(110, 216, 255, 0.10), rgba(29, 139, 214, 0.12));
+  mix-blend-mode: screen;
+  animation: sb-boost-wash 0.85s ease-in-out infinite alternate;
+}
+
+@keyframes sb-boost-wash {
+  from { opacity: 0.55; }
+  to   { opacity: 1; }
+}
+
+/* The score panel goes electric: cyan frame, glow, gentle pulse. */
+body.sb-boost-on .sb-score-panel {
+  border-color: var(--sb-cyan);
+  box-shadow:
+    inset 0 -10px 0 rgba(10, 74, 138, 0.28),
+    inset 0 6px 0 rgba(255, 255, 255, 0.6),
+    0 14px 0 var(--sb-blue-deep),
+    0 0 26px rgba(110, 216, 255, 0.95),
+    0 0 52px rgba(110, 216, 255, 0.55);
+  animation: sb-boost-panel 0.55s ease-in-out infinite alternate;
+}
+
+@keyframes sb-boost-panel {
+  from { transform: rotate(-1deg) scale(1); }
+  to   { transform: rotate(-1deg) scale(1.035); }
+}
+
+/* Score number tinted electric to match. */
+body.sb-boost-on .sb-score-value {
+  color: var(--sb-cyan-light);
+  -webkit-text-stroke: 3px var(--sb-blue-deep);
+  text-shadow:
+    0 0 16px rgba(110, 216, 255, 0.95),
+    0 4px 0 var(--sb-blue-deep);
+}
+
+/* Bolts on the panel glow too. */
+body.sb-boost-on .sb-score-panel::before,
+body.sb-boost-on .sb-score-panel::after {
+  box-shadow: 0 0 12px rgba(110, 216, 255, 0.9), 0 3px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* The banner switches to an electric call-out. */
+body.sb-boost-on .sb-banner {
+  color: var(--sb-cyan-light);
+  text-shadow: 0 0 14px rgba(110, 216, 255, 0.9), 0 4px 0 var(--sb-brown);
+}

@@ -24,7 +24,7 @@ export interface JellyfishBumpers {
 
 // Visual tuning — jellyfish stand a bit taller than the squat bumper they replace.
 const SCALE_MULT = 1.25;
-const Y_OFFSET = 0;4;
+const Y_OFFSET = 0.4;
 const HIT_FALLBACK_DURATION = 0.35;
 
 function pickClip(
@@ -75,9 +75,10 @@ export function createJellyfishBumpers(
         // Matériau émissif léger sur tous les meshes de la méduse
         root.traverse((obj) => {
           if (obj instanceof THREE.Mesh && obj.material instanceof THREE.MeshStandardMaterial) {
-            obj.material = obj.material.clone();
-            obj.material.emissive = new THREE.Color(0xff66cc);
-            obj.material.emissiveIntensity = 0.18;
+            const mat = obj.material.clone();
+            mat.emissive = new THREE.Color(0xff66cc);
+            mat.emissiveIntensity = 0.18;
+            obj.material = mat;
           }
         });
 
@@ -122,6 +123,7 @@ export function createJellyfishBumpers(
     },
     undefined,
     (err) => {
+      // eslint-disable-next-line no-console
       console.error('[jellyfish-bumpers] failed to load JellyFish.glb', err);
     },
   );
@@ -130,12 +132,15 @@ export function createJellyfishBumpers(
 
   function triggerHit(inst: BumperInstance): void {
     inst.hitFlash = FLASH_DURATION;
+    // Always fire the procedural punch. The skeletal Jellyfish_Hit clip plays on the same
+    // bones as the always-on Jellyfish_Idle loop, so at equal weight they blend and the hit
+    // barely reads. The scale punch is an unmistakable pop that composes on top, so every
+    // bumper visibly reacts on every hit — not just whichever one gets struck most.
+    inst.hitFallback = HIT_FALLBACK_DURATION;
     if (inst.hitAction) {
       inst.hitAction.stop();
       inst.hitAction.reset();
       inst.hitAction.play();
-    } else {
-      inst.hitFallback = HIT_FALLBACK_DURATION;
     }
   }
 
@@ -151,6 +156,12 @@ export function createJellyfishBumpers(
       for (const inst of instances) {
         inst.mixer.update(dt);
 
+        // Let the skeletal hit clip dominate the looping idle during the flash window,
+        // otherwise the two full-weight clips average out and the hit is invisible.
+        if (inst.hitAction && inst.idleAction) {
+          inst.idleAction.setEffectiveWeight(inst.hitFlash > 0 ? 0.15 : 1);
+        }
+
         // Pulse lumière idle — douce et lente
         const idlePulse = 0.5 + Math.sin(t * 1.4 + inst.basePosY) * 0.2;
 
@@ -158,7 +169,9 @@ export function createJellyfishBumpers(
         if (inst.hitFlash > 0) {
           inst.hitFlash = Math.max(0, inst.hitFlash - dt);
           const k = inst.hitFlash / FLASH_DURATION;
-          inst.light.intensity = 0.6 + Math.sin(k * Math.PI) * 1.8;
+          // Peak boosted to make up for the spark's removed PointLight (which used to
+          // add the bright spill but caused a shader-recompile stall on every hit).
+          inst.light.intensity = 0.6 + Math.sin(k * Math.PI) * 3.4;
         } else {
           inst.light.intensity = idlePulse;
         }
@@ -168,14 +181,14 @@ export function createJellyfishBumpers(
           inst.root.position.y = inst.basePosY + Math.sin(t * 2 + inst.basePosY) * 0.06;
         }
 
-        // Procedural hit punch
+        // Procedural hit punch — always applied, composes over any skeletal hit clip.
         if (inst.hitFallback > 0) {
           inst.hitFallback = Math.max(0, inst.hitFallback - dt);
           const k = inst.hitFallback / HIT_FALLBACK_DURATION;
           const punch = Math.sin(k * Math.PI);
-          const s = inst.baseScale * (1 + punch * 0.25);
+          const s = inst.baseScale * (1 + punch * 0.35);
           inst.root.scale.set(s, s * 0.45, s);
-        } else if (!inst.hitAction) {
+        } else {
           inst.root.scale.set(inst.baseScale, inst.baseScale * 0.45, inst.baseScale);
         }
       }

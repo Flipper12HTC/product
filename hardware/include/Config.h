@@ -26,6 +26,18 @@
 #define TOPIC_BUTTONS "pinball/" DEVICE_ID "/input/button"
 #define TOPIC_PLUNGER "pinball/" DEVICE_ID "/input/plunger"
 
+// GPIO each input is wired to (see contracts/README.md). All pull-up-capable
+// pins — the input-only pins 34-39 have no internal pull-up.
+#define PIN_BTN_L1 4
+#define PIN_BTN_R1 13
+#define PIN_BTN_L2 16
+#define PIN_BTN_R2 25
+#define PIN_BTN_TOP 17
+#define PIN_BTN_MIDDLE 18
+#define PIN_BTN_BOTTOM 19
+#define PIN_BTN_UNDER_PLUNGER 33
+#define PIN_PLUNGER 32
+
 // Debounce window applied to every button, in milliseconds.
 #define DEBOUNCE_MS 40
 

@@ -27,17 +27,17 @@ struct Binding {
 };
 
 Binding g_inputs[] = {
-    {DebouncedButton(4, DEBOUNCE_MS), "L1"},             // left flipper
-    {DebouncedButton(13, DEBOUNCE_MS), "R1"},            // right flipper
-    {DebouncedButton(16, DEBOUNCE_MS), "L2"},            // nav left
-    {DebouncedButton(25, DEBOUNCE_MS), "R2"},            // nav right
-    {DebouncedButton(17, DEBOUNCE_MS), "top"},           // start
-    {DebouncedButton(18, DEBOUNCE_MS), "middle"},        // secondary
-    {DebouncedButton(19, DEBOUNCE_MS), "bottom"},        // back / pause
-    {DebouncedButton(33, DEBOUNCE_MS), "under_plunger"}, // front white
+    {DebouncedButton(PIN_BTN_L1, DEBOUNCE_MS), "L1"},                        // white left — left flipper
+    {DebouncedButton(PIN_BTN_R1, DEBOUNCE_MS), "R1"},                        // black right — restart
+    {DebouncedButton(PIN_BTN_L2, DEBOUNCE_MS), "L2"},                        // black left — start
+    {DebouncedButton(PIN_BTN_R2, DEBOUNCE_MS), "R2"},                        // white right — right flipper
+    {DebouncedButton(PIN_BTN_TOP, DEBOUNCE_MS), "top"},                      // green — unused
+    {DebouncedButton(PIN_BTN_MIDDLE, DEBOUNCE_MS), "middle"},                // yellow — unused
+    {DebouncedButton(PIN_BTN_BOTTOM, DEBOUNCE_MS), "bottom"},                // red — unused
+    {DebouncedButton(PIN_BTN_UNDER_PLUNGER, DEBOUNCE_MS), "under_plunger"},  // front white — launch
 };
 
-DebouncedButton g_plunger(32, DEBOUNCE_MS);
+DebouncedButton g_plunger(PIN_PLUNGER, DEBOUNCE_MS);
 
 WiFiClient g_net;
 PubSubClient g_mqtt(g_net);

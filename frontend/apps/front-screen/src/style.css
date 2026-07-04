@@ -20,6 +20,8 @@ canvas {
   display: block;
   width: 100vw;
   height: 100vh;
+  /* Punch up the rendered colours — the raw render reads a bit pale/washed out. */
+  filter: saturate(2.35) contrast(1.05);
 }
 
 .debug-coords {
@@ -34,127 +36,4 @@ canvas {
   display: none;
   z-index: 999;
   pointer-events: none;
-}
-
-/* ── Start overlay ── */
-.overlay-root {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 50;
-  background: radial-gradient(ellipse at 50% 40%, rgba(0,80,180,0.88) 0%, rgba(0,20,70,0.97) 100%);
-  backdrop-filter: blur(6px);
-}
-
-.overlay-bubbles {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.overlay-bubble {
-  position: absolute;
-  border-radius: 50%;
-  border: 1.5px solid rgba(120, 200, 255, 0.45);
-  background: radial-gradient(circle at 35% 30%, rgba(180,230,255,0.25), transparent 70%);
-  animation: rise var(--dur) var(--delay) linear infinite;
-}
-
-.overlay-logo {
-  font-size: 80px;
-  margin-bottom: 6px;
-  filter: drop-shadow(0 0 24px #ffcc00) drop-shadow(0 0 48px rgba(255,180,0,0.5));
-  animation: float 3s ease-in-out infinite;
-}
-
-.overlay-title {
-  font-family: "Arial Black", Impact, sans-serif;
-  font-size: clamp(2.2rem, 7vw, 3.8rem);
-  font-weight: 900;
-  letter-spacing: 0.10em;
-  margin: 0 0 2px;
-  color: #ffe600;
-  animation: glow-pulse 2.5s ease-in-out infinite;
-  text-transform: uppercase;
-  text-align: center;
-}
-
-.overlay-subtitle {
-  font-family: "Arial Black", Impact, sans-serif;
-  font-size: clamp(1rem, 3.5vw, 2rem);
-  font-weight: 700;
-  letter-spacing: 0.28em;
-  margin: 0 0 36px;
-  color: #66ddff;
-  text-shadow: 0 0 16px #0088ff, 0 0 32px rgba(0,150,255,0.4);
-  text-transform: uppercase;
-  text-align: center;
-}
-
-.overlay-button {
-  padding: 18px 56px;
-  background: linear-gradient(135deg, #ff8800 0%, #ffcc00 60%, #ff9900 100%);
-  color: #003366;
-  font-family: "Arial Black", Impact, sans-serif;
-  font-size: clamp(1.1rem, 3.5vw, 1.6rem);
-  font-weight: 900;
-  letter-spacing: 0.14em;
-  border: 3px solid #ffeeaa;
-  cursor: pointer;
-  border-radius: 10px;
-  animation: btn-idle 2s ease-in-out infinite;
-  text-transform: uppercase;
-  transition: transform 0.12s, filter 0.12s;
-}
-
-.overlay-button:hover:not(:disabled) {
-  transform: scale(1.07);
-  filter: brightness(1.15);
-}
-
-.overlay-button:disabled {
-  opacity: 0.38;
-  cursor: not-allowed;
-}
-
-.overlay-hint {
-  margin-top: 14px;
-  color: rgba(160, 210, 255, 0.55);
-  font-family: monospace;
-  font-size: 0.85rem;
-  letter-spacing: 0.06em;
-}
-
-.overlay-reason {
-  display: none;
-  margin-top: 8px;
-  color: #ffdd55;
-  font-family: monospace;
-  font-size: 0.8rem;
-}
-
-@keyframes rise {
-  0%   { transform: translateY(0)        scale(1);   opacity: 0; }
-  10%  { opacity: 1; }
-  90%  { opacity: 0.6; }
-  100% { transform: translateY(-105vh)   scale(1.2); opacity: 0; }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-8px); }
-}
-
-@keyframes glow-pulse {
-  0%, 100% { text-shadow: 0 0 20px #ff8800, 0 2px 0 #884400; }
-  50%       { text-shadow: 0 0 40px #ffcc00, 0 0 80px rgba(255,160,0,0.5), 0 2px 0 #884400; }
-}
-
-@keyframes btn-idle {
-  0%, 100% { box-shadow: 0 0 28px rgba(255,180,0,0.75), 0 4px 0 #886600; }
-  50%       { box-shadow: 0 0 55px rgba(255,220,0,0.95), 0 0 90px rgba(255,150,0,0.4), 0 4px 0 #886600; }
 }

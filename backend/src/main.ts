@@ -2,7 +2,6 @@ import { RapierPhysicsWorld } from './infrastructure/physics/rapier-world.js';
 import { MqttInputSource } from './infrastructure/mqtt/mqtt-input-source.js';
 import { FastifyWsPublisher } from './infrastructure/ws/fastify-ws-publisher.js';
 import { PostgresScoreRepo } from './infrastructure/storage/postgres-score-repo.js';
-import { SolanaClient } from './infrastructure/blockchain/solana-client.js';
 import { buildApp, startApp, stopApp } from './interfaces/http/app.js';
 import { tickGame } from './application/use-cases/tick-game.js';
 import { setFlipperState } from './application/use-cases/set-flipper-state.js';
@@ -13,12 +12,11 @@ import {
   plungerRelease,
 } from './application/use-cases/launch-ball.js';
 import { createInitialState } from './domain/game.js';
+import type { InputSource } from './application/ports/input-source.js';
 
 const physics = new RapierPhysicsWorld();
 const publisher = new FastifyWsPublisher();
-const mqttInput = new MqttInputSource();
-
-new SolanaClient();
+const mqttInput: InputSource = new MqttInputSource();
 
 const scoreRepo = new PostgresScoreRepo();
 try {

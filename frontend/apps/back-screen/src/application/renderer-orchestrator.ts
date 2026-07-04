@@ -45,7 +45,10 @@ export function createRendererOrchestrator(source: GameSource, view: ScoreboardV
           update(withGameOver(state, event.payload.finalScore));
         }),
         source.on('boost_changed', (event) => {
-          update(withBoost(state, event.payload.active, event.payload.durationMs));
+          // Also sync the multiplier from the boost event so the x{n} pill reverts even
+          // when no score_update follows (e.g. a boost expiring on the idle screen).
+          const next = withBoost(state, event.payload.active, event.payload.durationMs);
+          update({ ...next, multiplier: event.payload.multiplier });
         }),
       );
       source.start();

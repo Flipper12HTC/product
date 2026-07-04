@@ -2,11 +2,16 @@ import type { GamePublisher } from '../ports/game-publisher.js';
 import type { ScoreRepo } from '../ports/score-repo.js';
 import type { GameState } from '../../domain/game.js';
 
-export function endGame(state: GameState, publisher: GamePublisher, repo?: ScoreRepo): void {
+export function endGame(
+  state: GameState,
+  publisher: GamePublisher,
+  repo?: ScoreRepo,
+  now: number = Date.now(),
+): void {
   if (state.status !== 'running') return;
 
   state.status = 'over';
-  state.endedAt = Date.now();
+  state.endedAt = now;
 
   publisher.broadcast({
     type: 'game_over',
@@ -20,8 +25,9 @@ export function endGame(state: GameState, publisher: GamePublisher, repo?: Score
         points: state.score,
         achievedAt: new Date(),
       })
-      .catch(() => {
-        /* repo errors are non-fatal for the game loop */
+      .catch((err) => {
+        // Repo errors are non-fatal for the game loop, but must stay visible.
+        console.error('[score-repo] saveFinal failed:', err);
       });
   }
 }

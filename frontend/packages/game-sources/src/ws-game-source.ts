@@ -11,23 +11,28 @@ export interface WsGameSourceOptions {
   onConnectionChange?: (state: ConnectionState) => void;
 }
 
-const KNOWN_EVENT_TYPES: ReadonlySet<GameEventType> = new Set<GameEventType>([
-  'ball_position',
-  'score_update',
-  'ball_drained',
-  'bumper_hit',
-  'slingshot_hit',
-  'game_over',
-  'flipper_state',
-  'boost_changed',
-]);
+// Keyed by every GameEventType so tsc errors here whenever contracts adds an
+// event type that this map does not know about.
+const KNOWN_EVENT_TYPES_RECORD: Record<GameEventType, true> = {
+  ball_position: true,
+  score_update: true,
+  ball_drained: true,
+  bumper_hit: true,
+  slingshot_hit: true,
+  game_over: true,
+  flipper_state: true,
+  ball_launched: true,
+  boost_changed: true,
+};
+
+const KNOWN_EVENT_TYPES: ReadonlySet<string> = new Set(Object.keys(KNOWN_EVENT_TYPES_RECORD));
 
 function isGameEvent(data: unknown): data is GameEvent {
   if (typeof data !== 'object' || data === null) return false;
   const record = data as { type?: unknown; payload?: unknown };
   if (typeof record.type !== 'string') return false;
   if (typeof record.payload !== 'object' || record.payload === null) return false;
-  return KNOWN_EVENT_TYPES.has(record.type as GameEventType);
+  return KNOWN_EVENT_TYPES.has(record.type);
 }
 
 export class WsGameSource implements GameSource {

@@ -4,13 +4,14 @@ import { tickGame } from '../../../src/application/use-cases/tick-game.js';
 import { createInitialState } from '../../../src/domain/game.js';
 import { PLAYFIELD } from '../../../src/domain/playfield.js';
 import type { Vec3 } from '../../../src/domain/ball.js';
-import type { PhysicsWorld } from '../../../src/application/ports/physics-world.js';
+import type { PhysicsWorld, BumperHit } from '../../../src/application/ports/physics-world.js';
 import type { GamePublisher, GameEvent } from '../../../src/application/ports/game-publisher.js';
 
 let stepped = false;
 let resetCalled = false;
 let ballPos: Vec3 = { x: 1, y: 2, z: 3 };
 let hitsToReturn = 0;
+let bumperHitsToReturn: BumperHit[] = [];
 let published: GameEvent[] = [];
 
 const mockPhysics: PhysicsWorld = {
@@ -31,7 +32,11 @@ const mockPhysics: PhysicsWorld = {
     hitsToReturn = 0;
     return n;
   },
-  consumeBumperHits: () => [],
+  consumeBumperHits: () => {
+    const hits = bumperHitsToReturn;
+    bumperHitsToReturn = [];
+    return hits;
+  },
   getLaneSeparatorX: () => 3.5,
 };
 
@@ -47,6 +52,7 @@ describe('tickGame', () => {
     resetCalled = false;
     ballPos = { x: 1, y: 2, z: 3 };
     hitsToReturn = 0;
+    bumperHitsToReturn = [];
     published = [];
   });
 
@@ -92,6 +98,56 @@ describe('tickGame', () => {
     const scoreEvt = published.find((e) => e.type === 'score_update');
     assert.ok(scoreEvt);
     assert.equal((scoreEvt as Extract<GameEvent, { type: 'score_update' }>).payload.score, 100);
+  });
+
+  it('adds 100 * multiplier per bumper hit and broadcasts bumper_hit', () => {
+    const state = createInitialState();
+    state.status = 'running';
+    bumperHitsToReturn = [{ id: 'b2', x: -0.84, z: -3.94 }];
+
+    tickGame(state, mockPhysics, mockPublisher, 1 / 60);
+
+    assert.equal(state.score, 100);
+    assert.equal(state.bumperHitCount, 1);
+    const hit = published.find((e) => e.type === 'bumper_hit');
+    assert.ok(hit);
+    assert.equal((hit as Extract<GameEvent, { type: 'bumper_hit' }>).payload.id, 'b2');
+  });
+
+  it('activates a x3 boost after 10 bumper hits and emits boost_changed', () => {
+    const state = createInitialState();
+    state.status = 'running';
+    // 10 hits in a single tick → crosses the threshold and triggers the boost.
+    bumperHitsToReturn = Array.from({ length: 10 }, () => ({ id: 'b2', x: 0, z: 0 }));
+
+    tickGame(state, mockPhysics, mockPublisher, 1 / 60);
+
+    assert.equal(state.bumperHitCount, 10);
+    assert.equal(state.multiplier, 3);
+    assert.ok(state.boostUntil !== null, 'boostUntil should be set');
+    // 10 hits scored at x1 (boost applies from the next hit onward).
+    assert.equal(state.score, 1000);
+    const boost = published.find((e) => e.type === 'boost_changed');
+    assert.ok(boost);
+    const payload = (boost as Extract<GameEvent, { type: 'boost_changed' }>).payload;
+    assert.equal(payload.active, true);
+    assert.equal(payload.multiplier, 3);
+    assert.equal(payload.durationMs, 10_000);
+  });
+
+  it('expires the x3 boost after its duration and reverts to x1', () => {
+    const state = createInitialState();
+    state.status = 'running';
+    state.multiplier = 3;
+    state.boostUntil = Date.now() - 1; // already elapsed
+
+    tickGame(state, mockPhysics, mockPublisher, 1 / 60);
+
+    assert.equal(state.multiplier, 1);
+    assert.equal(state.boostUntil, null);
+    const boost = published.find((e) => e.type === 'boost_changed');
+    assert.ok(boost);
+    assert.equal((boost as Extract<GameEvent, { type: 'boost_changed' }>).payload.active, false);
   });
 
   it('drains ball, decrements ballsLeft and respawns when balls remain', () => {

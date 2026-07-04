@@ -4,7 +4,8 @@ import { TABLE } from '@flipper/contracts';
 export function makeBubbleSprite(): THREE.Texture {
   const c = document.createElement('canvas');
   c.width = c.height = 64;
-  const ctx = c.getContext('2d')!;
+  const ctx = c.getContext('2d');
+  if (!ctx) return new THREE.CanvasTexture(c);
   const g = ctx.createRadialGradient(32, 32, 6, 32, 32, 28);
   g.addColorStop(0,   'rgba(135,206,250,0)');
   g.addColorStop(0.6, 'rgba(135,206,250,0.07)');
@@ -60,7 +61,7 @@ export function createBubbleLayer(
   });
 
   scene.add(new THREE.Points(geo, mat));
-  const attr = geo.attributes['position'] as THREE.BufferAttribute;
+  const attr = geo.attributes.position as THREE.BufferAttribute;
   const WRAP = 28;
 
   return (t: number) => {

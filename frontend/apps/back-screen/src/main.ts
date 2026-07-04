@@ -10,16 +10,18 @@ import { MockGameSource, WsGameSource } from '@flipper/game-sources';
 // (vite) we fall back to the local backend on :8080. Override with
 // VITE_BACKEND_URL / VITE_WS_URL at build time if ever needed.
 const BACKEND_URL =
-  (import.meta.env.VITE_BACKEND_URL as string | undefined) ??
+  import.meta.env.VITE_BACKEND_URL ??
   (import.meta.env.DEV ? 'http://localhost:8080' : '');
 const WS_URL =
-  (import.meta.env.VITE_WS_URL as string | undefined) ??
+  import.meta.env.VITE_WS_URL ??
   (BACKEND_URL
     ? `${BACKEND_URL.replace(/^http/, 'ws')}/ws`
     : `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws`);
 
 function pickSource(): GameSource {
-  const kind = import.meta.env.VITE_GAME_SOURCE ?? (import.meta.env.DEV ? 'mock' : 'ws');
+  // Default to the real backend (WS) so the scoreboard mirrors the live game even
+  // in dev; opt into the offline demo loop with VITE_GAME_SOURCE=mock.
+  const kind = import.meta.env.VITE_GAME_SOURCE ?? 'ws';
   if (kind === 'ws') {
     return new WsGameSource({ url: WS_URL });
   }
@@ -28,7 +30,6 @@ function pickSource(): GameSource {
 
 const source = pickSource();
 let currentStatus: 'idle' | 'running' | 'over' = 'idle';
-let lastStartAt = 0;
 
 source.on('score_update', () => {
   currentStatus = 'running';
@@ -37,19 +38,11 @@ source.on('game_over', () => {
   currentStatus = 'over';
 });
 
-function requestStart(): void {
-  if (currentStatus === 'running') return;
-  const now = Date.now();
-  if (now - lastStartAt < 500) return;
-  lastStartAt = now;
-  void fetch(`${BACKEND_URL}/game/start`, { method: 'POST' }).catch(() => undefined);
-}
-
 const root = document.createElement('main');
 root.id = 'root';
 document.body.appendChild(root);
 
-const view = createScoreboardView(root, { onStart: requestStart });
+const view = createScoreboardView(root);
 const orchestrator = createRendererOrchestrator(source, view);
 orchestrator.start();
 

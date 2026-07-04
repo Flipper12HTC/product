@@ -59,9 +59,12 @@ export function createElectricity(scene: THREE.Scene, origin: THREE.Vector3): Sp
   const core = new THREE.Mesh(coreGeo, coreMat);
   group.add(core);
 
-  // ---- Point light for a brief glow
-  const light = new THREE.PointLight(0xa3e9ff, 8, 4);
-  group.add(light);
+  // NOTE: no dynamic PointLight here. Adding/removing a light changes the scene
+  // light count, which forces THREE to recompile every lit material's shader on the
+  // next frame — a multi-hundred-ms stall ("0 FPS then recovers") on every hit.
+  // The additive bolts + core are self-illuminated, and the jellyfish keeps its own
+  // persistent PointLight that flashes on hit (jellyfish-bumpers.ts), so the burst
+  // still lights its surroundings without any light-count churn.
 
   scene.add(group);
 
@@ -86,9 +89,6 @@ export function createElectricity(scene: THREE.Scene, origin: THREE.Vector3): Sp
 
       // bolts grow outward slightly
       group.scale.setScalar(1 + t * 0.4);
-
-      // light fades
-      light.intensity = 8 * fade;
 
       return true;
     },

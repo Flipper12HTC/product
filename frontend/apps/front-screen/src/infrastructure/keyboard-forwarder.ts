@@ -39,6 +39,11 @@ export function attachKeyboardForwarder(options: KeyboardForwarderOptions): () =
     void fetch(`${backendUrl}/game/restart`, { method: 'POST' }).catch(() => undefined);
   }
 
+  /** Demo helper: force the x3 jellyfish boost (H key). */
+  function postBoost(): void {
+    void fetch(`${backendUrl}/game/boost`, { method: 'POST' }).catch(() => undefined);
+  }
+
   function postPlunger(action: 'press' | 'release'): void {
     void fetch(`${backendUrl}/game/plunger/${action}`, { method: 'POST' }).catch(() => undefined);
   }
@@ -56,6 +61,12 @@ export function attachKeyboardForwarder(options: KeyboardForwarderOptions): () =
       if (e.repeat) return;
       e.preventDefault();
       postRestart();
+      return;
+    }
+    if (e.code === 'KeyH') {
+      if (e.repeat) return;
+      e.preventDefault();
+      postBoost();
       return;
     }
     if (e.code === 'ArrowDown') {

@@ -1,25 +1,18 @@
 import './style.css';
 import type { GameSource } from './application/ports/game-source';
-import { createRendererOrchestrator } from './application/renderer-orchestrator';
-import { createParticleEffects } from './adapters/effects/particles';
+import { createRendererOrchestrator, type DecoStage } from './application/renderer-orchestrator';
+import { createDecoScene } from './adapters/scene/deco-scene';
 import { createLeaderboardView } from './adapters/components/leaderboard-view';
+import { mountUnderwaterBackground } from './adapters/components/underwater-bg';
 import { MockGameSource, WsGameSource } from '@flipper/game-sources';
 
-// Same-origin by default: the cabinet serves each screen from its own nginx,
-// which reverse-proxies /ws, /game and /scores to the backend service. In dev
-// (vite) we fall back to the local backend on :8080. Override with
-// VITE_BACKEND_URL / VITE_WS_URL at build time if ever needed.
-const BACKEND_URL =
-  (import.meta.env.VITE_BACKEND_URL as string | undefined) ??
-  (import.meta.env.DEV ? 'http://localhost:8080' : '');
-const WS_URL =
-  (import.meta.env.VITE_WS_URL as string | undefined) ??
-  (BACKEND_URL
-    ? `${BACKEND_URL.replace(/^http/, 'ws')}/ws`
-    : `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws`);
+const WS_URL = 'ws://localhost:8080/ws';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8080';
 
 function pickSource(): GameSource {
-  const kind = import.meta.env.VITE_GAME_SOURCE ?? (import.meta.env.DEV ? 'mock' : 'ws');
+  // Default to the real backend (WS) so the screen mirrors the live game even in
+  // dev; opt into the offline demo loop with VITE_GAME_SOURCE=mock.
+  const kind = import.meta.env.VITE_GAME_SOURCE ?? 'ws';
   if (kind === 'ws') {
     return new WsGameSource({ url: WS_URL });
   }
@@ -36,20 +29,42 @@ interface ScoresResponseDto {
   scores: ScoreDto[];
 }
 
-const canvas = document.createElement('canvas');
-document.body.appendChild(canvas);
+// ---- Background + leaderboard first: these must always render, even if WebGL
+//      is unavailable. The 3D stage is layered on top and is best-effort.
+mountUnderwaterBackground();
 
-const effects = createParticleEffects(canvas);
 const leaderboard = createLeaderboardView();
 leaderboard.mount();
 
+// A no-op stage keeps the orchestrator + render loop safe if the 3D scene
+// cannot be created (no WebGL, model load failure, etc.).
+const NULL_STAGE: DecoStage = {
+  trigger: () => {},
+  reactScore: () => {},
+  reactBoost: () => {},
+  reactDrain: () => {},
+  reactGameOver: () => {},
+  reactReset: () => {},
+  tick: () => {},
+  dispose: () => {},
+};
+
+let stage: DecoStage = NULL_STAGE;
+try {
+  const canvas = document.createElement('canvas');
+  document.body.appendChild(canvas);
+  stage = createDecoScene(canvas);
+} catch (err) {
+  console.warn('[deco-screen] 3D scene unavailable, running leaderboard only:', err);
+}
+
 const source = pickSource();
-const orchestrator = createRendererOrchestrator(source, effects);
+const orchestrator = createRendererOrchestrator(source, stage);
 orchestrator.start();
 
 async function refreshLeaderboard(): Promise<void> {
   try {
-    const r = await fetch(`${BACKEND_URL}/scores/top?limit=10`);
+    const r = await fetch(`${BACKEND_URL}/scores/top?limit=5`);
     if (!r.ok) return;
     const data = (await r.json()) as ScoresResponseDto;
     leaderboard.render(
@@ -71,11 +86,17 @@ source.on('game_over', () => {
     void refreshLeaderboard();
   }, 200);
 });
+
 let last = performance.now();
 function loop(now: number): void {
   const delta = now - last;
   last = now;
-  effects.tick(delta);
+  try {
+    stage.tick(delta);
+  } catch (err) {
+    // A render error must not kill the loop or freeze the page.
+    console.warn('[deco-screen] stage tick error:', err);
+  }
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);

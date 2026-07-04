@@ -7,6 +7,7 @@ export type {
   SlingshotHitEvent,
   GameOverEvent,
   FlipperStateEvent,
+  BallLaunchedEvent,
   BoostChangedEvent,
   GameEvent,
   GameEventType,

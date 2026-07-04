@@ -1,6 +1,9 @@
 # Dependencies
 node_modules
 
+# pnpm workspace: keep npm lockfiles out
+package-lock.json
+
 # Build outputs
 dist
 dist-ssr
@@ -34,3 +37,4 @@ pnpm-debug.log*
 Thumbs.db
 
 .claude/
+*.md

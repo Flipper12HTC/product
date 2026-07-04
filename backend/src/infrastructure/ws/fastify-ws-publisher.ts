@@ -12,7 +12,7 @@ export class FastifyWsPublisher implements GamePublisher {
   broadcast(event: GameEvent): void {
     const msg = JSON.stringify(event);
     for (const client of this.clients) {
-      if (client.readyState === 1) {
+      if (client.readyState === client.OPEN) {
         client.send(msg);
       }
     }

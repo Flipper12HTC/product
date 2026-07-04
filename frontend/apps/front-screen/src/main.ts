@@ -6,20 +6,31 @@ import { createScene } from './adapters/scene/scene';
 import { createBall } from './adapters/meshes/ball';
 import { createFlipper } from './adapters/meshes/flipper';
 import type { Flipper } from './adapters/meshes/flipper';
-import { WsGameSource } from '@flipper/game-sources';
+import { MockGameSource, WsGameSource } from '@flipper/game-sources';
+import { createSoundManager } from './adapters/audio/sound-manager';
 
 // Same-origin by default: the cabinet serves each screen from its own nginx,
 // which reverse-proxies /ws, /game and /scores to the backend service. In dev
 // (vite) we fall back to the local backend on :8080. Override with
 // VITE_BACKEND_URL / VITE_WS_URL at build time if ever needed.
 const BACKEND_URL =
-  (import.meta.env.VITE_BACKEND_URL as string | undefined) ??
+  import.meta.env.VITE_BACKEND_URL ??
   (import.meta.env.DEV ? 'http://localhost:8080' : '');
 const WS_URL =
-  (import.meta.env.VITE_WS_URL as string | undefined) ??
+  import.meta.env.VITE_WS_URL ??
   (BACKEND_URL
     ? `${BACKEND_URL.replace(/^http/, 'ws')}/ws`
     : `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws`);
+
+function pickSource(): GameSource {
+  // Default to the real backend (WS) so the playfield mirrors the live game even
+  // in dev; opt into the offline demo loop with VITE_GAME_SOURCE=mock.
+  const kind = import.meta.env.VITE_GAME_SOURCE ?? 'ws';
+  if (kind === 'ws') {
+    return new WsGameSource({ url: WS_URL });
+  }
+  return new MockGameSource();
+}
 
 const canvas = document.createElement('canvas');
 document.body.appendChild(canvas);
@@ -33,7 +44,7 @@ let debugActive = false;
 const { scene, render, resize, onMeshesReady, toggleDebug, updateDebugBall, addBallTrail, triggerShake, jellyfishBumpers } =
   createScene(canvas);
 const ball = createBall(scene);
-const source: GameSource = new WsGameSource({ url: WS_URL });
+const source: GameSource = pickSource();
 
 let flipperLeft: Flipper | null = null;
 let flipperRight: Flipper | null = null;
@@ -42,6 +53,9 @@ onMeshesReady(({ flipperLeft: leftMesh, flipperRight: rightMesh }) => {
   flipperLeft = createFlipper(scene, leftMesh, { side: 'left' });
   flipperRight = createFlipper(scene, rightMesh, { side: 'right' });
 });
+
+const soundManager = createSoundManager();
+soundManager.attach(source);
 
 const orchestrator = createRendererOrchestrator(source, {
   onBallMoved(position) {
@@ -58,7 +72,7 @@ const orchestrator = createRendererOrchestrator(source, {
     flipperLeft?.setState(state);
     flipperRight?.setState(state);
   },
-  onScoreChanged() {},
+  onScoreChanged() { /* noop */ },
   onGameOver() {
     ball.setVisible(false);
   },
@@ -73,12 +87,17 @@ attachKeyboardForwarder({
   isStartAllowed: () => true,
 });
 
+let mutedSound = false;
 window.addEventListener('keydown', (e) => {
   if (e.key === 'p' || e.key === 'P') {
     debugActive = !debugActive;
     toggleDebug();
     coordsDiv.style.display = debugActive ? 'block' : 'none';
     if (!debugActive) coordsDiv.textContent = '';
+  }
+  if (e.key === 'm' || e.key === 'M') {
+    mutedSound = !mutedSound;
+    soundManager.setMuted(mutedSound);
   }
 });
 

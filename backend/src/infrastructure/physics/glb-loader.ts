@@ -13,27 +13,29 @@ export interface FlipperPivot {
 }
 
 export interface BumperPosition {
-  id: string;       // derived from the mesh name suffix
-  x: number;        // physics X
-  z: number;        // physics Z
-  radius: number;   // cylinder radius in physics units
+  id: string; // derived from the mesh name suffix
+  x: number; // physics X
+  z: number; // physics Z
+  radius: number; // cylinder radius in physics units
 }
 
 export interface DerivedPositions {
   flipperLeft: FlipperPivot;
   flipperRight: FlipperPivot;
-  laneSeparatorX: number;       // inner edge of plunger lane wall (separator between lane & field)
-  laneSpawnX: number;           // centre X of the plunger lane
-  bumpers: BumperPosition[];    // procedural bumpers — auto-collected from col_bumper_marker_* meshes
+  laneSeparatorX: number; // inner edge of plunger lane wall (separator between lane & field)
+  laneSpawnX: number; // centre X of the plunger lane
+  bumpers: BumperPosition[]; // procedural bumpers — auto-collected from col_bumper_marker_* meshes
 }
 
 export interface PlayfieldGeometry {
-  sol: MeshGeometry;       // col_floor_* only — used for addInclinedFloor slope
+  floor: MeshGeometry; // col_floor_* only — used for addInclinedFloor slope
   refFloor: MeshGeometry | null; // col_ref_floor_* — separate trimesh for exact floor collision
-  murs: MeshGeometry;
+  walls: MeshGeometry;
   aprons: MeshGeometry | null;
-  rampe: MeshGeometry | null;
+  ramp: MeshGeometry | null;
   frameWalls: MeshGeometry | null; // col_wall_frame_* — extracted without the inLane filter
+  panel: MeshGeometry | null; // col_wall_panel — circular loop, low restitution so ball follows the curve
+  guides: Float32Array[]; // solid convex hulls (point clouds) for the thin guide/slingshot meshes
   derived: DerivedPositions;
 }
 
@@ -43,7 +45,7 @@ export interface LoadOptions {
 }
 
 /**
- * Load playfield meshes from pinball_map_FINAL.glb.
+ * Load playfield meshes from FlipperBase.glb.
  *
  * Coordinate remapping (GLB uses Z-up, Blender XY plane = table surface):
  *   GLB X → physics X  (table width, left-right)
@@ -137,11 +139,7 @@ export async function loadPlayfieldGeometry(
   const baseOffsetY = -sceneMinY * scaleY; // align floor elevation (GLB Y) to physics Y = 0
 
   // Transform one GLB vertex to physics space.
-  const toPhysics = (
-    gx: number,
-    gy: number,
-    gz: number,
-  ): [number, number, number] => [
+  const toPhysics = (gx: number, gy: number, gz: number): [number, number, number] => [
     gx * scaleX - centerX,
     gy * scaleY + baseOffsetY, // GLB Y → physics Y (elevation)
     gz * scaleZ - centerZ, // GLB Z → physics Z (depth). No mirror: keeps triangle
@@ -155,7 +153,7 @@ export async function loadPlayfieldGeometry(
       b: [number, number, number],
       c: [number, number, number],
     ) => boolean,
-    vertexTransform?: (v: [number, number, number]) => [number, number, number],
+    excludeNames?: readonly string[],
   ): MeshGeometry => {
     const patterns = Array.isArray(matchNames) ? matchNames : [matchNames];
     const verts: number[] = [];
@@ -164,6 +162,7 @@ export async function loadPlayfieldGeometry(
     for (const mesh of root.listMeshes()) {
       const name = mesh.getName() ?? '';
       if (!patterns.some((p) => name.includes(p))) continue;
+      if (excludeNames?.some((e) => name.includes(e))) continue;
       for (const prim of mesh.listPrimitives()) {
         const pos = prim.getAttribute('POSITION');
         if (!pos) continue;
@@ -178,7 +177,7 @@ export async function loadPlayfieldGeometry(
             arr[i * 3 + 1] as number,
             arr[i * 3 + 2] as number,
           );
-          tVerts.push(vertexTransform ? vertexTransform(p) : p);
+          tVerts.push(p);
         }
 
         const indices = prim.getIndices();
@@ -267,17 +266,20 @@ export async function loadPlayfieldGeometry(
     const cx = (a[0] + b[0] + c[0]) / 3;
     if (cx <= LANE_X_MIN || cx >= LANE_X_MAX) return false;
     return (
-      a[0] > LANE_X_MIN && a[0] < LANE_X_MAX &&
-      b[0] > LANE_X_MIN && b[0] < LANE_X_MAX &&
-      c[0] > LANE_X_MIN && c[0] < LANE_X_MAX
+      a[0] > LANE_X_MIN &&
+      a[0] < LANE_X_MAX &&
+      b[0] > LANE_X_MIN &&
+      b[0] < LANE_X_MAX &&
+      c[0] > LANE_X_MIN &&
+      c[0] < LANE_X_MAX
     );
   };
 
-  // Murs: keep any face that's not strictly horizontal (|physics Y normal| < 0.85).
+  // Walls: keep any face that's not strictly horizontal (|physics Y normal| < 0.85).
   // 0.85 keeps everything except quasi-flat floor/ceiling tops, including curved wall
   // sections, slingshot ramps, and dome edges. Anything stricter (e.g. 0.5 / 0.7) was
   // poking gaps in slanted wall sections that the ball squeezed through.
-  const keepMursTri = (
+  const keepWallTri = (
     a: [number, number, number],
     b: [number, number, number],
     c: [number, number, number],
@@ -288,7 +290,7 @@ export async function loadPlayfieldGeometry(
     return Math.abs(n[1]) <= 0.85;
   };
 
-  // Wall meshes — vertical faces become physical collision surfaces (filtered by keepMursTri).
+  // Wall meshes — vertical faces become physical collision surfaces (filtered by keepWallTri).
   // Patterns are matched as substrings against mesh names in the GLB.
   // Adding a `col_wall_*` or `col_ref_*` family in Blender is enough — register here once
   // so the loader auto-collects every mesh whose name contains the substring.
@@ -303,17 +305,19 @@ export async function loadPlayfieldGeometry(
     // the inLane zone, so the vertex-based check would strip the entire right wall portion.
     // The X-clip extraction below preserves it clipped to X=3.3 instead.
     // col_wall_shooter omitted — it blocks the central passage the ball must travel through.
-    'col_wall_panel',
+    // col_wall_panel extracted separately (panel below) — low restitution so ball follows the curve.
     'col_wall_left_fill',
     'col_wall_slingshots',
-    'col_wall_flipper',       // col_wall_flipper_* — wall pieces around the flippers
+    'col_wall_flipper', // col_wall_flipper_* — wall pieces around the flippers
+    'col_wall_center', // col_wall_center_mesh — central wall between the flippers (physX≈[-1.6,1.6])
+    'col_wall_dome', // col_wall_dome_left/right — merged panel+shooter dome walls
     // col_wall_plunger_lane intentionally omitted — addLaneSeparator() builds a clean box wall.
     // col_wall_apron is in ALL_FACE_MESHES (its slanted faces would otherwise create
-    // sharp launchpads under keepMursTri that catapult the ball into the ceiling).
+    // sharp launchpads under keepWallTri that catapult the ball into the ceiling).
     'col_bumper_mini',
-    'col_bumper_targets',     // col_bumper_targets + col_bumper_targets_tiny + col_bumper_targets_group
-    'col_ref_deco',           // col_ref_deco_*
-    'col_ref_wall',           // col_ref_wall_*
+    'col_bumper_targets', // col_bumper_targets + col_bumper_targets_tiny + col_bumper_targets_group
+    'col_ref_deco', // col_ref_deco_*
+    'col_ref_wall', // col_ref_wall_*
     // col_wall_apron extracted separately (APRON_MESHES) — its bottom edge floats above
     // the floor (apron_2 sits at Y=0.31), letting the ball roll UNDER it. The dedicated
     // extraction drops the bottom band to the floor so the wall actually blocks the ball.
@@ -327,24 +331,36 @@ export async function loadPlayfieldGeometry(
   // surfaces need to be walked through.
   // Apron meshes are intentionally NOT loaded — their tops support the ball and
   // trap it above the floor. The boundary box walls already close the drain area.
-  const ALL_FACE_MESHES = [
-    'col_ramp_main',
-  ] as const;
+  const ALL_FACE_MESHES = ['col_ramp_main'] as const;
 
-  // Extract all-face meshes (ramps + slanted apron walls) — full geometry, no filter.
-  let rampe: MeshGeometry | null = null;
+  // col_ramp_main end-cap filter: remove strongly Z-facing faces (|nZ| ≥ 0.80).
+  // The ramp is a hollow tube; its drain-side entry has faces with nZ≈+0.96 (drain-facing)
+  // that block the ball from entering the ramp channel in one-sided Rapier trimesh mode.
+  // Removing end caps (|nZ| ≥ 0.80) keeps the floor (nY≈0.97, |nZ|=0.26) and side walls
+  // (nX≈±1.0) intact while opening both ends of the tube so the ball can enter and exit.
+  const keepRampTri = (
+    a: [number, number, number],
+    b: [number, number, number],
+    c: [number, number, number],
+  ): boolean => {
+    const n = normal(a, b, c);
+    if (!n) return false;
+    return Math.abs(n[2]) < 0.8;
+  };
+
+  let ramp: MeshGeometry | null = null;
   try {
-    rampe = extractMesh(ALL_FACE_MESHES);
+    ramp = extractMesh(ALL_FACE_MESHES, keepRampTri);
   } catch {
     // None of the all-face meshes present in this GLB — not an error.
   }
 
   // Frame / plunger / flipper ref meshes — extracted WITHOUT the inLane filter because
   // these meshes sit inside the lane zone (X≈3–4.5) and every triangle would otherwise
-  // be stripped by the inLane check in keepMursTri.
-  // keepMursTri_noLane still removes near-horizontal faces (tops/bottoms) so they don't
+  // be stripped by the inLane check in keepWallTri.
+  // keepWallTriNoLane still removes near-horizontal faces (tops/bottoms) so they don't
   // act as launch ramps or trap the ball against the ceiling.
-  const keepMursTri_noLane = (
+  const keepWallTriNoLane = (
     a: [number, number, number],
     b: [number, number, number],
     c: [number, number, number],
@@ -354,16 +370,171 @@ export async function loadPlayfieldGeometry(
     return Math.abs(n[1]) <= 0.85;
   };
   const FRAME_WALL_MESHES = [
-    'col_wall_frame',    // col_wall_frame_black + col_wall_frame_003..009
-    'col_ref_plunger',   // col_ref_plunger_003/006/007/008/009 — plunger lane guide rails
-    'col_ref_flipper',   // col_ref_flipper_007/030 + others — walls around the flipper area
+    'col_wall_frame', // col_wall_frame_* — any remaining frame walls
+    'col_wall_black.001',
+    'col_wall_black.002',
+    'col_wall_black.004',
+    'col_wall_black.005',
+    'col_wall_black.006',
+    'col_ref_plunger', // col_ref_plunger_003/006/007/008/009 — plunger lane guide rails
+    'col_ref_flipper', // col_ref_flipper_007/030 + others — walls around the flipper area
   ] as const;
+  // Meshes excluded from the main FRAME_WALL_MESHES batch and handled individually below.
+  // Right-side guide rail meshes — excluded from the trimesh batch, rebuilt as solid
+  // convex hulls below; as one-sided quads they formed pockets and wedged the ball.
+  //   _037: X[1.41,2.76] Z[5.19,6.19] nZ=-0.76 — field-facing plane of the inner guide
+  //   _029: X[1.51,3.01] Z[5.46,6.32] nZ=+0.85 — drain-facing plane of the same guide
+  //   _031: X[1.41,1.51] Z[6.10,6.32]          — connector at the flipper-side tip
+  //   _027: X[1.93,2.94] Z[5.93,6.99] nZ=-0.76 — OUTER guide beside the right flipper,
+  //         extruded quad hull (the right inlane channel runs between _027 and _029/_037)
+  // Left guide walls (_003/_005/_007/_032/_035) and slingshot faces (_014, plunger
+  // _003/_004/_006/_007/_009) are excluded here and rebuilt as SOLID convex hulls below —
+  // as thin trimesh quads they wedged the ball in acute corners against the floor.
+  const SPECIAL_MESHES = [
+    'col_wall_black.003',
+    'col_ref_flipper_003',
+    'col_ref_flipper_005',
+    'col_ref_flipper_007',
+    'col_ref_flipper_014',
+    'col_ref_flipper_027',
+    'col_ref_flipper_029',
+    'col_ref_flipper_031',
+    'col_ref_flipper_032',
+    'col_ref_flipper_035',
+    'col_ref_flipper_037',
+    // _001 is the ramp entry lip (X[-3.58,-2.82] Z[4.25,5.11], overhanging face
+    // n(0,-0.26,0.97)) — balls slammed into it instead of entering the ramp mouth.
+    // Replaced by the programmatic entry wedge in rapier-world (addRampEntryWedge).
+    'col_ref_plunger_001',
+    'col_ref_plunger_003',
+    'col_ref_plunger_004',
+    'col_ref_plunger_006',
+    'col_ref_plunger_007',
+    'col_ref_plunger_009',
+  ] as const;
+
   let frameWalls: MeshGeometry | null = null;
   try {
-    frameWalls = extractMesh(FRAME_WALL_MESHES, keepMursTri_noLane);
+    frameWalls = extractMesh(FRAME_WALL_MESHES, keepWallTriNoLane, SPECIAL_MESHES);
   } catch {
     // None of the frame/ref meshes present in this GLB — not an error.
   }
+
+  // col_wall_black.003 — strip drain-facing pocket faces (nZ≈0.94) with |nZ|<0.6 filter.
+  const keepNoZPocket = (
+    a: [number, number, number],
+    b: [number, number, number],
+    c: [number, number, number],
+  ): boolean => {
+    const n = normal(a, b, c);
+    if (!n) return false;
+    return Math.abs(n[1]) <= 0.85 && Math.abs(n[2]) < 0.6;
+  };
+  try {
+    frameWalls = mergeTrimeshes(frameWalls, extractMesh(['col_wall_black.003'], keepNoZPocket));
+  } catch {
+    /* not present */
+  }
+
+  // --- Solid convex guide hulls ---
+  // The thin guide/slingshot quads kept trapping the ball no matter how they were loaded:
+  // one-sided planes with opposing normals form pockets, and double-sided zero-thickness
+  // quads wedge the ball in acute corners against the floor (repro: ball at rest on the
+  // right slingshot bottom corner (1.40, 0.93, 5.31)). Each group is replaced by ONE solid
+  // convex hull built from the raw GLB vertices — a convex volume has no thin face to
+  // wedge against and CCD handles it robustly.
+  const gatherVerts = (
+    patterns: readonly string[],
+    filter?: (v: [number, number, number]) => boolean,
+  ): [number, number, number][] => {
+    const out: [number, number, number][] = [];
+    for (const mesh of root.listMeshes()) {
+      const name = mesh.getName() ?? '';
+      if (!patterns.some((p) => name.includes(p))) continue;
+      for (const prim of mesh.listPrimitives()) {
+        const pos = prim.getAttribute('POSITION');
+        const arr = pos?.getArray();
+        if (!pos || !arr) continue;
+        for (let i = 0; i < pos.getCount(); i++) {
+          const v = toPhysics(
+            arr[i * 3] as number,
+            arr[i * 3 + 1] as number,
+            arr[i * 3 + 2] as number,
+          );
+          if (!filter || filter(v)) out.push(v);
+        }
+      }
+    }
+    return out;
+  };
+  const flatten = (pts: [number, number, number][]): Float32Array => {
+    const f = new Float32Array(pts.length * 3);
+    pts.forEach((p, i) => f.set(p, i * 3));
+    return f;
+  };
+  // The GLB guide rails stand only ~0.15–0.27 above the local floor — barely a ball
+  // radius, so fast balls hopped straight over them. Real tables run a wire guide on
+  // top; raiseTop emulates it by duplicating every vertex 0.3 higher before hulling.
+  const raiseTop = (pts: [number, number, number][]): [number, number, number][] => [
+    ...pts,
+    ...pts.map((v): [number, number, number] => [v[0], v[1] + 0.3, v[2]]),
+  ];
+  const guides: Float32Array[] = [];
+  // Left inlane guide wall: _003 (outlane-facing plane) + _007 (field-facing plane) are the
+  // two faces of the same wall, 0.26 apart — with the end strips _005/_035 the hull is a
+  // naturally solid slab, no extrusion needed.
+  const wallA = gatherVerts([
+    'col_ref_flipper_003',
+    'col_ref_flipper_005',
+    'col_ref_flipper_007',
+    'col_ref_flipper_035',
+  ]);
+  if (wallA.length >= 4) guides.push(flatten(raiseTop(wallA)));
+  // Right inlane guide wall (mirror of wall A): _029 (drain-facing plane) + _037
+  // (field-facing plane) overlap in Z with opposite normals — two faces of the same
+  // wall — and _031 is the small connector at the flipper-side tip. As one-sided
+  // trimeshes they had no reliable physics (and doubleSided sealed a trap), so they
+  // were excluded entirely; the solid hull restores collision on both sides.
+  const wallR = gatherVerts(['col_ref_flipper_029', 'col_ref_flipper_031', 'col_ref_flipper_037']);
+  if (wallR.length >= 4) guides.push(flatten(raiseTop(wallR)));
+  // Single coplanar quads — extrude ±0.06 along the face normal so the hull has volume.
+  //   _032: left outlane outer guide.
+  //   _027: right inlane outer guide, the wall directly beside the right flipper
+  //         (X[1.93,2.94] Z[5.93,6.99]) — without physics the ball cut straight
+  //         through it and drained behind the flipper.
+  for (const quad of ['col_ref_flipper_032', 'col_ref_flipper_027'] as const) {
+    const pts = gatherVerts([quad]);
+    if (pts.length < 3) continue;
+    const n = normal(pts[0]!, pts[1]!, pts[2]!) ?? [1, 0, 0];
+    const ext: [number, number, number][] = [];
+    for (const v of pts) {
+      ext.push([v[0] + n[0] * 0.06, v[1] + n[1] * 0.06, v[2] + n[2] * 0.06]);
+      ext.push([v[0] - n[0] * 0.06, v[1] - n[1] * 0.06, v[2] - n[2] * 0.06]);
+    }
+    guides.push(flatten(raiseTop(ext)));
+  }
+  // Slingshots: plunger _003 (inner), _004 (top), _006 (top edge), _007 (outer), _009
+  // (bottom) + flipper _014 (tip caps) hold faces of BOTH slingshot bodies (mirrored
+  // halves live in the same meshes). Split at X=0 → one solid hull per side.
+  const SLINGSHOT_MESHES = [
+    'col_ref_plunger_003',
+    'col_ref_plunger_004',
+    'col_ref_plunger_006',
+    'col_ref_plunger_007',
+    'col_ref_plunger_009',
+    'col_ref_flipper_014',
+  ] as const;
+  // raiseTop here too: with the GLB height (~0.3–0.55 above the floor) a 16 m/s ball
+  // climbed onto the slingshot body and dropped over the inlane rail behind it. Real
+  // slingshots are solid up to the plastics above.
+  const slingR = gatherVerts(SLINGSHOT_MESHES, (v) => v[0] > 0);
+  const slingL = gatherVerts(SLINGSHOT_MESHES, (v) => v[0] < 0);
+  if (slingR.length >= 4) guides.push(flatten(raiseTop(slingR)));
+  if (slingL.length >= 4) guides.push(flatten(raiseTop(slingL)));
+  // col_wall_frame_black covers too many heterogeneous Blender objects to filter cleanly
+  // without per-mesh renaming. The vertical faces are already included via FRAME_WALL_MESHES
+  // (keepWallTriNoLane). A separate extraction with a looser Y filter caused pockets that
+  // trapped the ball. Removed until meshes are renamed in Blender for finer control.
 
   // Base floor meshes (col_floor_*) — used for both the floor trimesh AND the
   // addInclinedFloor slope calculation. Keeping these separate from col_ref_floor_*
@@ -372,7 +543,7 @@ export async function loadPlayfieldGeometry(
   const floorMeshNames = root
     .listMeshes()
     .map((m) => m.getName() ?? '')
-    .filter((n) => n.startsWith('col_floor_') && !n.includes('base'));
+    .filter((n) => n.startsWith('col_floor_') && !n.includes('base') && !n.includes('detail'));
   if (floorMeshNames.length === 0) {
     throw new Error('No col_floor_* meshes found in GLB');
   }
@@ -392,17 +563,29 @@ export async function loadPlayfieldGeometry(
     const node = root.listNodes().find((n) => n.getName() === nodeName);
     const mesh = node?.getMesh();
     if (!mesh) return null;
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity;
+    let minX = Infinity,
+      maxX = -Infinity,
+      minY = Infinity,
+      maxY = -Infinity,
+      minZ = Infinity,
+      maxZ = -Infinity;
     for (const prim of mesh.listPrimitives()) {
       const pos = prim.getAttribute('POSITION');
       if (!pos) continue;
       const arr = pos.getArray();
       if (!arr) continue;
       for (let i = 0; i < pos.getCount(); i++) {
-        const [px, py, pz] = toPhysics(arr[i * 3] as number, arr[i * 3 + 1] as number, arr[i * 3 + 2] as number);
-        if (px < minX) minX = px; if (px > maxX) maxX = px;
-        if (py < minY) minY = py; if (py > maxY) maxY = py;
-        if (pz < minZ) minZ = pz; if (pz > maxZ) maxZ = pz;
+        const [px, py, pz] = toPhysics(
+          arr[i * 3] as number,
+          arr[i * 3 + 1] as number,
+          arr[i * 3 + 2] as number,
+        );
+        if (px < minX) minX = px;
+        if (px > maxX) maxX = px;
+        if (py < minY) minY = py;
+        if (py > maxY) maxY = py;
+        if (pz < minZ) minZ = pz;
+        if (pz > maxZ) maxZ = pz;
       }
     }
     if (!isFinite(minX)) return null;
@@ -433,9 +616,9 @@ export async function loadPlayfieldGeometry(
   const halfW = opts.targetWidth / 2;
   const laneSeparatorX = bbLane
     ? Math.abs(bbLane.maxX) < Math.abs(bbLane.minX)
-      ? bbLane.maxX   // lane on left → inner edge is positive (toward centre)
-      : bbLane.minX   // lane on right → inner edge is negative (toward centre)
-    : halfW - 1;      // fallback: 1 unit from right wall
+      ? bbLane.maxX // lane on left → inner edge is positive (toward centre)
+      : bbLane.minX // lane on right → inner edge is negative (toward centre)
+    : halfW - 1; // fallback: 1 unit from right wall
   const laneSpawnX = bbLane ? (bbLane.minX + bbLane.maxX) / 2 : halfW - 0.5;
 
   // Bumpers — auto-collected from every mesh whose name starts with `col_bumper_marker_`.
@@ -447,7 +630,10 @@ export async function loadPlayfieldGeometry(
   for (const mesh of root.listMeshes()) {
     const name = mesh.getName() ?? '';
     if (!name.startsWith('col_bumper_marker_')) continue;
-    let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+    let minX = Infinity,
+      maxX = -Infinity,
+      minZ = Infinity,
+      maxZ = -Infinity;
     for (const prim of mesh.listPrimitives()) {
       const pos = prim.getAttribute('POSITION');
       if (!pos) continue;
@@ -459,8 +645,10 @@ export async function loadPlayfieldGeometry(
           arr[i * 3 + 1] as number,
           arr[i * 3 + 2] as number,
         );
-        if (px < minX) minX = px; if (px > maxX) maxX = px;
-        if (pz < minZ) minZ = pz; if (pz > maxZ) maxZ = pz;
+        if (px < minX) minX = px;
+        if (px > maxX) maxX = px;
+        if (pz < minZ) minZ = pz;
+        if (pz > maxZ) maxZ = pz;
       }
     }
     if (!isFinite(minX)) continue;
@@ -508,13 +696,26 @@ export async function loadPlayfieldGeometry(
     }
   }
 
+  // col_wall_panel — the circular loop on the right side.
+  // Extracted separately with keepWallTri so only vertical faces get collision,
+  // then loaded with very low restitution in rapier-world so the ball follows the
+  // curve instead of bouncing back into the lane on hard shots.
+  let panel: MeshGeometry | null = null;
+  try {
+    panel = extractMesh(['col_wall_panel'], keepWallTri);
+  } catch {
+    // Not present — fine.
+  }
+
   return {
-    sol: extractMesh(floorMeshNames, keepSolTri),
+    floor: extractMesh(floorMeshNames, keepSolTri),
     refFloor,
-    murs: extractMesh(WALL_MESHES, keepMursTri),
+    walls: extractMesh(WALL_MESHES, keepWallTri),
     aprons,
-    rampe,
+    ramp,
     frameWalls,
+    panel,
+    guides,
     derived: { flipperLeft, flipperRight, laneSeparatorX, laneSpawnX, bumpers },
   };
 }

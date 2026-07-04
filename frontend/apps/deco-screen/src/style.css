@@ -1,5 +1,38 @@
-@import 'tailwindcss';
+@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Luckiest+Guy&family=Patrick+Hand&display=swap');
+/* Scope Tailwind's automatic source scanning to ./src only. Without this, v4
+   also scans ../public and tries to read the 19 MB Spongebob.glb as text,
+   which exhausts the bundler's memory and breaks the deco-screen build. */
+@import 'tailwindcss' source(none);
+@source './';
 @import '@flipper/design-system/theme.css';
+
+/* Custom Krabby Patty font — public/fonts/Krabby Patty.ttf */
+@font-face {
+  font-family: 'Krabby Patty';
+  src: url('/fonts/Krabby%20Patty.ttf') format('truetype');
+  font-display: swap;
+}
+
+:root {
+  --sb-yellow: #ffec1f;
+  --sb-yellow-deep: #f7c600;
+  --sb-orange: #ff8a00;
+  --sb-brown: #5b3a17;
+  --sb-brown-deep: #3a230d;
+  --sb-pink: #ff79b0;
+  --sb-red: #e23636;
+  --sb-cyan-light: #cdf4ff;
+  --sb-cyan: #6ed8ff;
+  --sb-blue: #1d8bd6;
+  --sb-blue-deep: #0a4a8a;
+  --sb-sand-top: #fff4d4;
+  --sb-sand: #f7e1a8;
+  --sb-sand-deep: #e6c275;
+  --sb-green: #6dbf3a;
+
+  --font-cartoon: 'Krabby Patty', 'Luckiest Guy', 'Bangers', cursive;
+  --font-cartoon-alt: 'Krabby Patty', 'Bangers', 'Luckiest Guy', cursive;
+}
 
 * {
   margin: 0;
@@ -7,11 +40,354 @@
   box-sizing: border-box;
 }
 
+html,
 body {
+  height: 100%;
   overflow: hidden;
-  background: var(--color-arcade-black);
 }
 
+body {
+  font-family: 'Patrick Hand', 'Comic Sans MS', cursive, sans-serif;
+  color: #fff;
+  min-height: 100vh;
+  position: relative;
+  background:
+    radial-gradient(ellipse at 50% -10%, #fffbe0 0%, transparent 55%),
+    linear-gradient(
+      180deg,
+      var(--sb-cyan-light) 0%,
+      var(--sb-cyan) 22%,
+      var(--sb-blue) 60%,
+      var(--sb-blue-deep) 100%
+    );
+}
+
+/* The 3D canvas (SpongeBob + particle bursts) sits above the background
+   layers but below the leaderboard UI. */
 canvas {
   display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+/* ---------- Sun rays (fixed, no rotation = no seam) ---------- */
+body::before {
+  content: '';
+  position: fixed;
+  inset: -10vh -10vw -10vh -10vw;
+  pointer-events: none;
+  background: conic-gradient(
+    from 200deg at 50% -8%,
+    transparent 0deg,
+    rgba(255, 255, 220, 0.2) 8deg,
+    transparent 14deg,
+    transparent 22deg,
+    rgba(255, 255, 220, 0.14) 28deg,
+    transparent 34deg,
+    transparent 46deg,
+    rgba(255, 255, 220, 0.2) 52deg,
+    transparent 58deg,
+    transparent 68deg,
+    rgba(255, 255, 220, 0.12) 74deg,
+    transparent 80deg,
+    transparent 96deg,
+    rgba(255, 255, 220, 0.18) 102deg,
+    transparent 110deg,
+    transparent 124deg,
+    rgba(255, 255, 220, 0.14) 130deg,
+    transparent 138deg,
+    transparent 320deg
+  );
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.4) 40%, transparent 70%);
+  -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.4) 40%, transparent 70%);
+  z-index: 0;
+}
+
+/* ---------- Sandy sea floor (tall, organic) ---------- */
+.sb-sand {
+  position: fixed;
+  left: -5vw;
+  right: -5vw;
+  bottom: 0;
+  height: 32vh;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.sb-sand::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 100%, var(--sb-sand-deep) 0%, transparent 75%),
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      rgba(255, 244, 212, 0.55) 12%,
+      var(--sb-sand-top) 28%,
+      var(--sb-sand) 65%,
+      var(--sb-sand-deep) 100%
+    );
+}
+
+.sb-sand::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -3px;
+  height: 80px;
+  background-image:
+    radial-gradient(ellipse 70px 22px at 4% 100%, var(--sb-sand-top) 60%, transparent 62%),
+    radial-gradient(ellipse 95px 28px at 14% 100%, var(--sb-sand-top) 60%, transparent 62%),
+    radial-gradient(ellipse 80px 24px at 26% 100%, var(--sb-sand-top) 60%, transparent 62%),
+    radial-gradient(ellipse 110px 32px at 40% 100%, var(--sb-sand-top) 60%, transparent 62%),
+    radial-gradient(ellipse 80px 24px at 54% 100%, var(--sb-sand-top) 60%, transparent 62%),
+    radial-gradient(ellipse 100px 28px at 68% 100%, var(--sb-sand-top) 60%, transparent 62%),
+    radial-gradient(ellipse 70px 22px at 82% 100%, var(--sb-sand-top) 60%, transparent 62%),
+    radial-gradient(ellipse 90px 26px at 95% 100%, var(--sb-sand-top) 60%, transparent 62%);
+}
+
+.sb-sand-speckles {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 32vh;
+  z-index: 2;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle 2px at 12% 70%, rgba(120, 80, 30, 0.35) 100%, transparent),
+    radial-gradient(circle 1.5px at 28% 85%, rgba(120, 80, 30, 0.3) 100%, transparent),
+    radial-gradient(circle 2px at 46% 60%, rgba(120, 80, 30, 0.35) 100%, transparent),
+    radial-gradient(circle 1px at 62% 78%, rgba(120, 80, 30, 0.3) 100%, transparent),
+    radial-gradient(circle 2px at 78% 90%, rgba(120, 80, 30, 0.32) 100%, transparent),
+    radial-gradient(circle 1.5px at 90% 65%, rgba(120, 80, 30, 0.3) 100%, transparent);
+}
+
+/* ---------- Background coral flowers ---------- */
+.sb-flowers {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.sb-flower {
+  position: absolute;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+  animation: sb-flower-sway 6s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+
+@keyframes sb-flower-sway {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+/* ---------- Bubbles ---------- */
+.sb-bubbles {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  overflow: hidden;
+}
+
+.sb-bubble {
+  position: absolute;
+  bottom: -80px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.35) 30%,
+    rgba(255, 255, 255, 0.05) 60%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.35);
+  animation-name: sb-bubble-rise;
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-in;
+}
+
+@keyframes sb-bubble-rise {
+  0% {
+    transform: translate(0, 0) scale(0.6);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate(20px, -55vh) scale(1);
+  }
+  90% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(-20px, -115vh) scale(1.05);
+    opacity: 0;
+  }
+}
+
+/* ---------- Leaderboard (Krusty Krab sign vibe) ---------- */
+.sb-leaderboard {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1.2vh;
+  padding: 4vh 4vw 0;
+  pointer-events: none;
+}
+
+.sb-lb-title {
+  font-family: var(--font-cartoon);
+  letter-spacing: 0.12em;
+  color: var(--sb-yellow);
+  -webkit-text-stroke: 3px var(--sb-brown);
+  text-shadow:
+    0 4px 0 var(--sb-brown),
+    0 8px 18px rgba(0, 0, 0, 0.35);
+  font-size: clamp(2rem, 5vw, 4.5rem);
+  text-transform: uppercase;
+  animation: sb-wobble 4s ease-in-out infinite;
+}
+
+@keyframes sb-wobble {
+  0%,
+  100% {
+    transform: rotate(-2deg) translateY(0);
+  }
+  50% {
+    transform: rotate(1.5deg) translateY(-4px);
+  }
+}
+
+.sb-lb-panel {
+  position: relative;
+  width: min(78vw, 700px);
+  padding: 1.2rem 1.6rem 1.4rem;
+  background: linear-gradient(180deg, #fff8d8 0%, #ffe172 70%, #f7c600 100%);
+  border: 5px solid var(--sb-brown);
+  border-radius: 28px;
+  box-shadow:
+    inset 0 -10px 0 rgba(91, 58, 23, 0.18),
+    inset 0 6px 0 rgba(255, 255, 255, 0.6),
+    0 14px 0 var(--sb-brown),
+    0 18px 36px rgba(0, 0, 0, 0.4);
+  transform: rotate(-1deg);
+}
+
+/* Bolts on the side of the panel */
+.sb-lb-panel::before,
+.sb-lb-panel::after {
+  content: '';
+  position: absolute;
+  top: 28px;
+  width: 24px;
+  height: 24px;
+  background: radial-gradient(circle at 35% 35%, #fff 0%, #c9c9c9 50%, #6b6b6b 100%);
+  border-radius: 50%;
+  border: 3px solid var(--sb-brown);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3);
+}
+.sb-lb-panel::before {
+  left: -14px;
+}
+.sb-lb-panel::after {
+  right: -14px;
+}
+
+.sb-lb-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.sb-lb-row {
+  display: grid;
+  grid-template-columns: 2.4rem 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.28);
+  border: 2px solid rgba(91, 58, 23, 0.25);
+  font-family: var(--font-cartoon-alt);
+  font-size: clamp(1rem, 2vw, 1.7rem);
+  color: var(--sb-brown);
+}
+
+.sb-lb-row--1 {
+  background: linear-gradient(180deg, #fff6c2 0%, #ffd84d 100%);
+  border-color: var(--sb-brown);
+  transform: scale(1.04);
+}
+.sb-lb-row--2 {
+  background: rgba(255, 255, 255, 0.55);
+}
+.sb-lb-row--3 {
+  background: rgba(255, 236, 180, 0.5);
+}
+
+.sb-lb-rank {
+  font-family: var(--font-cartoon);
+  color: var(--sb-red);
+  -webkit-text-stroke: 1.5px var(--sb-brown);
+  text-align: center;
+}
+
+.sb-lb-player {
+  color: var(--sb-brown-deep);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sb-lb-points {
+  font-family: var(--font-cartoon);
+  color: var(--sb-red);
+  -webkit-text-stroke: 1.5px var(--sb-brown);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.sb-lb-empty {
+  text-align: center;
+  font-family: var(--font-cartoon-alt);
+  color: var(--sb-brown);
+  font-size: clamp(1rem, 2vw, 1.5rem);
+  padding: 1rem 0;
+}
+
+/* New highlight when the board refreshes after a game */
+.sb-lb-row.is-new {
+  animation: sb-lb-pop 700ms ease-out;
+}
+
+@keyframes sb-lb-pop {
+  0% {
+    transform: scale(0.9);
+    background: var(--sb-cyan-light);
+  }
+  60% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+  }
 }

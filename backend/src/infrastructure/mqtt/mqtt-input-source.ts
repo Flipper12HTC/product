@@ -20,8 +20,6 @@ export class MqttInputSource implements InputSource {
   private client: mqtt.MqttClient | null = null;
   private pressHandlers: ((side: FlipperSide) => void)[] = [];
   private releaseHandlers: ((side: FlipperSide) => void)[] = [];
-  private tiltHandlers: (() => void)[] = [];
-  private drainHandlers: (() => void)[] = [];
   private startHandlers: (() => void)[] = [];
   private restartHandlers: (() => void)[] = [];
   private plungerHandlers: ((pressed: boolean) => void)[] = [];
@@ -104,14 +102,6 @@ export class MqttInputSource implements InputSource {
 
   onButtonRelease(cb: (side: FlipperSide) => void): void {
     this.releaseHandlers.push(cb);
-  }
-
-  onTilt(cb: () => void): void {
-    this.tiltHandlers.push(cb);
-  }
-
-  onDrain(cb: () => void): void {
-    this.drainHandlers.push(cb);
   }
 
   /** Fired when the physical start button (black left) is pressed. */

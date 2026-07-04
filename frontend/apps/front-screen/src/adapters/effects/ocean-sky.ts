@@ -4,7 +4,8 @@ export function createOceanSky(scene: THREE.Scene): (t: number) => void {
   const W = 512, H = 256;
   const can = document.createElement('canvas');
   can.width = W; can.height = H;
-  const ctx = can.getContext('2d')!;
+  const ctx = can.getContext('2d');
+  if (!ctx) return () => {};
   const tex = new THREE.CanvasTexture(can);
   const mat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.BackSide, fog: false });
   scene.add(new THREE.Mesh(new THREE.SphereGeometry(85, 32, 16), mat));

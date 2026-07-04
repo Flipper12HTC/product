@@ -12,8 +12,7 @@
   "dependencies": {
     "@flipper/contracts": "workspace:*",
     "@flipper/design-system": "workspace:*",
-    "@flipper/game-sources": "workspace:*",
-    "@flipper/ws-client": "workspace:*"
+    "@flipper/game-sources": "workspace:*"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.2",

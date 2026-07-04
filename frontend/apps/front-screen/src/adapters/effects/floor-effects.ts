@@ -1,14 +1,15 @@
 import * as THREE from 'three';
 import { TABLE } from '@flipper/contracts';
 
-export type FloorSampler = { getY: (x: number, z: number) => number; rotX: number };
+export interface FloorSampler { getY: (x: number, z: number) => number; rotX: number }
 
 // ── Caustiques sous-marines animées (overlay canvas sur le sol) ──
 export function createCausticOverlay(scene: THREE.Scene, floor: FloorSampler): (t: number) => void {
   const size = 512;
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = size;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return () => {};
   const tex = new THREE.CanvasTexture(canvas);
 
   const geo = new THREE.PlaneGeometry(TABLE.width + 0.5, TABLE.depth + 0.5);
@@ -83,50 +84,6 @@ export function createCausticLights(scene: THREE.Scene): (t: number) => void {
   };
 }
 
-// ── Inserts lumineux dans le sol ──
-export function createInsertLights(scene: THREE.Scene, floor: FloorSampler): (t: number) => void {
-  const inserts: {
-    mat: THREE.MeshBasicMaterial;
-    phase: number;
-    freq: number;
-    r: number;
-    g: number;
-    b: number;
-  }[] = [];
-
-  const defs: { x: number; z: number; color: number; r: number }[] = [];
-
-  const c = new THREE.Color();
-  for (const d of defs) {
-    c.setHex(d.color);
-    const mat = new THREE.MeshBasicMaterial({
-      color: d.color,
-      transparent: true,
-      opacity: 0.92,
-    });
-    const circle = new THREE.Mesh(new THREE.CircleGeometry(d.r, 16), mat);
-    circle.rotation.x = floor.rotX;
-    circle.position.set(d.x, floor.getY(d.x, d.z), d.z);
-    scene.add(circle);
-
-    inserts.push({
-      mat,
-      phase: Math.random() * Math.PI * 2,
-      freq: 0.5 + Math.random() * 0.9,
-      r: c.r,
-      g: c.g,
-      b: c.b,
-    });
-  }
-
-  return (t: number) => {
-    for (const ins of inserts) {
-      const pulse = 0.55 + Math.sin(t * ins.freq + ins.phase) * 0.45;
-      ins.mat.color.setRGB(ins.r * pulse, ins.g * pulse, ins.b * pulse);
-    }
-  };
-}
-
 // ── Flaques d'eau animées ──
 export function createWaterPuddles(scene: THREE.Scene, floor: FloorSampler): (t: number) => void {
   const spots = [
@@ -166,7 +123,8 @@ export function createWaterPuddles(scene: THREE.Scene, floor: FloorSampler): (t:
 
     const can = document.createElement('canvas');
     can.width = can.height = SZ;
-    const ctx = can.getContext('2d')!;
+    const ctx = can.getContext('2d');
+    if (!ctx) continue;
     const tex = new THREE.CanvasTexture(can);
 
     const mat = new THREE.MeshStandardMaterial({
@@ -255,7 +213,8 @@ export function createSandRipples(
   const SZ  = 512;
   const can = document.createElement('canvas');
   can.width = can.height = SZ;
-  const ctx = can.getContext('2d')!;
+  const ctx = can.getContext('2d');
+  if (!ctx) return () => {};
   const tex = new THREE.CanvasTexture(can);
 
   const mat = new THREE.MeshBasicMaterial({
@@ -292,7 +251,7 @@ export function createSandRipples(
       for (let x = 0; x <= SZ; x += 2) {
         const y = yBase + Math.sin((x / SZ) * Math.PI * 2 * freq + t * spd + b * 1.3) * amp
                         + Math.sin((x / SZ) * Math.PI * 2 * freq * 0.53 + t * spd * 0.7) * amp * 0.45;
-        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        if (x === 0) { ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
       }
       ctx.strokeStyle = `rgba(130, 100, 55, ${alpha})`;
       ctx.lineWidth = width;
@@ -332,7 +291,8 @@ export function createSandDetail(scene: THREE.Scene, floor: FloorSampler, sandDi
   const SZ = 256;
   const can = document.createElement('canvas');
   can.width = can.height = SZ;
-  const ctx = can.getContext('2d')!;
+  const ctx = can.getContext('2d');
+  if (!ctx) return;
   const img = ctx.createImageData(SZ, SZ);
 
   for (let py = 0; py < SZ; py++) {

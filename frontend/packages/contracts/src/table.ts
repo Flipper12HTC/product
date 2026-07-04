@@ -42,7 +42,7 @@ export const TABLE = {
     { id: 'b2', x: -0.84, z: -3.94, radius: 0.4, scale: 1 },
     { id: 'b3', x: 0.83, z: -4.18, radius: 0.4, scale: 1 },
     { id: 'b4', x: -3.18, z: -6.35, radius: 0.4, scale: 1 },
-    { id: 'bm1', x: -0.12, z: 3.72, radius: 0.3, scale: 1 },
-    { id: 'bm2', x: -1.87, z: 0.03, radius: 0.3, scale: 1 },
+    // bm1/bm2 removed — no visual mesh for them; the backend dropped their physics
+    // cylinders too (invisible kickers right above the flippers).
   ],
 } as const;

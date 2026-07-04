@@ -8,7 +8,7 @@ const physics = new RapierPhysicsWorld();
 
 describe('ball physics', () => {
   before(async () => {
-    await physics.init({ restitution: 0.7, wallHeight: 10 });
+    await physics.init({ restitution: 0.7 });
   });
 
   beforeEach(() => {
@@ -40,8 +40,9 @@ describe('ball physics', () => {
     // Park the ball on the main playfield away from any spawn-area walls.
     // The test verifies the +Z gravity component drifts the ball toward the drain,
     // independently of where the GLB-derived spawn happens to sit.
-    physics.setBallPosition({ x: 0, y: 3, z: -2 });
-    const drainZ = PLAYFIELD.depth / 2 - 0.5;
+    // X=0 Z=6: just above the flipper area, clear path toward the drain wall.
+    physics.setBallPosition({ x: 0, y: 3, z: 6 });
+    const drainZ = PLAYFIELD.depth / 2 - 0.5; // 7.5
     let drained = false;
     for (let i = 0; i < 600; i++) {
       physics.step(DT);
@@ -51,6 +52,6 @@ describe('ball physics', () => {
         break;
       }
     }
-    assert.ok(drained, 'ball should reach bottom area within 10s under gravity z');
+    assert.ok(drained, 'ball should reach drain area under gravity z');
   });
 });
