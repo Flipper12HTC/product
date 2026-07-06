@@ -72,7 +72,7 @@ export function createJellyfishBumpers(
         const posY = getFloorY ? getFloorY(b.x, b.z) : Y_OFFSET;
         root.position.set(b.x, posY, b.z);
 
-        // Matériau émissif léger sur tous les meshes de la méduse
+        // Give every jellyfish mesh a faint pink glow.
         root.traverse((obj) => {
           if (obj instanceof THREE.Mesh && obj.material instanceof THREE.MeshStandardMaterial) {
             const mat = obj.material.clone();
@@ -82,7 +82,7 @@ export function createJellyfishBumpers(
           }
         });
 
-        // Lumière douce qui pulse sous la méduse
+        // Soft light that pulses under the jellyfish.
         const light = new THREE.PointLight(0xff88dd, 0.6, 2.5);
         light.position.set(b.x, posY + 0.3, b.z);
         scene.add(light);
@@ -162,10 +162,10 @@ export function createJellyfishBumpers(
           inst.idleAction.setEffectiveWeight(inst.hitFlash > 0 ? 0.15 : 1);
         }
 
-        // Pulse lumière idle — douce et lente
+        // Slow, soft idle light pulse.
         const idlePulse = 0.5 + Math.sin(t * 1.4 + inst.basePosY) * 0.2;
 
-        // Flash au hit
+        // Bright flash on hit.
         if (inst.hitFlash > 0) {
           inst.hitFlash = Math.max(0, inst.hitFlash - dt);
           const k = inst.hitFlash / FLASH_DURATION;

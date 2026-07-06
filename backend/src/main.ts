@@ -54,6 +54,8 @@ mqttInput.onPlunger((pressed) => {
 });
 mqttInput.connect();
 
+// Fixed timestep (60 Hz): the simulation stays deterministic regardless of
+// load, and every screen sees the same authoritative world.
 const DT = 1 / 60;
 setInterval(() => {
   tickGame(state, physics, publisher, DT, scoreRepo);

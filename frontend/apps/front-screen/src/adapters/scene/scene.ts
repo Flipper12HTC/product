@@ -130,26 +130,36 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
   renderer.setSize(window.innerWidth, window.innerHeight, true);
   fitCamera();
 
-  // ── Éclairage Bikini Bottom ──
+  // ── Light Bikini Bottom ──
   scene.add(new THREE.HemisphereLight(0x00ccff, 0xffdd66, 2.8));
   scene.add(new THREE.AmbientLight(0xffee22, 2.0));
 
+  // main sun light, only shadow caster in the scene to keep GPU load manageable
   const keyLight = new THREE.DirectionalLight(0xffdd00, 13.0);
   keyLight.position.set(6, 28, -8);
   keyLight.castShadow = true;
+
+  // 2048×2048 shadow map, best quality/performance balance for 4K cabinet screens
   keyLight.shadow.mapSize.width  = 2048;
   keyLight.shadow.mapSize.height = 2048;
+
+  // shadow frustum tightly fitted to the table dimensions (9×16 units) for maximum texel density
   keyLight.shadow.camera.near   = 1;
   keyLight.shadow.camera.far    = 90;
   keyLight.shadow.camera.left   = -13;
   keyLight.shadow.camera.right  =  13;
   keyLight.shadow.camera.top    =  20;
   keyLight.shadow.camera.bottom = -20;
+
+  // prevent shadow acne (self-shadowing artefacts caused by floating-point imprecision)
   keyLight.shadow.bias          = -0.0003;
   keyLight.shadow.normalBias    =  0.02;
+
+  // soft shadow edges, underwater light is naturally diffuse
   keyLight.shadow.radius        =  4;
   scene.add(keyLight);
 
+  // fill lights add colour variety without shadows — Bikini Bottom palette
   const addFill = (color: number, intensity: number, x: number, y: number, z: number) => {
     const l = new THREE.DirectionalLight(color, intensity);
     l.position.set(x, y, z);

@@ -1,5 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Luckiest+Guy&family=Patrick+Hand&display=swap');
-@import 'tailwindcss';
+/* Scope Tailwind's source scanning to ./src only — otherwise v4 also scans ../public
+   and tries to read the 19 MB Spongebob.glb as text, which hangs the dev server. */
+@import 'tailwindcss' source(none);
+@source './';
 @import '@flipper/design-system/theme.css';
 
 /* Custom Krabby Patty font — public/fonts/Krabby Patty.ttf
@@ -776,6 +779,19 @@ body::before {
 }
 
 .sb-hidden { display: none !important; }
+
+/* Small decorative 3D SpongeBob, tucked bottom-right among the scenery (z below the
+   score UI so he reads as part of the decor, not an overlay on the numbers). */
+.sb-corner-3d {
+  position: fixed;
+  right: 1.5vw;
+  bottom: 7vh;
+  width: clamp(150px, 17vw, 280px);
+  height: clamp(200px, 23vw, 380px);
+  z-index: 3;
+  pointer-events: none;
+  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.4));
+}
 
 /* =========================================================================
    x3 BOOST MODE — while a boost is active, `body.sb-boost-on` restyles the

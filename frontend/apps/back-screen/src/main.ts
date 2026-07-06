@@ -2,6 +2,7 @@ import './style.css';
 import type { GameSource } from './application/ports/game-source';
 import { createRendererOrchestrator } from './application/renderer-orchestrator';
 import { createScoreboardView } from './adapters/components/scoreboard-view';
+import { mountSpongebobCorner } from './adapters/spongebob-corner';
 import { attachKeyboardForwarder } from './infrastructure/keyboard-forwarder';
 import { MockGameSource, WsGameSource } from '@flipper/game-sources';
 
@@ -45,6 +46,9 @@ document.body.appendChild(root);
 const view = createScoreboardView(root);
 const orchestrator = createRendererOrchestrator(source, view);
 orchestrator.start();
+
+// Small decorative 3D SpongeBob tucked into a corner (best-effort; no-op without WebGL).
+mountSpongebobCorner();
 
 attachKeyboardForwarder({
   backendUrl: BACKEND_URL,

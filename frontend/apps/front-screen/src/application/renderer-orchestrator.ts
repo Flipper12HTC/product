@@ -18,6 +18,7 @@ export function createRendererOrchestrator(
   source: GameSource,
   callbacks: RendererCallbacks,
 ): Orchestrator {
+  // each source.on() returns an unsubscribe function, collected here for clean teardown
   const unsubs: (() => void)[] = [];
 
   function subscribe(): void {
@@ -48,6 +49,7 @@ export function createRendererOrchestrator(
       );
     }
 
+    // Optional callback, only subscribe if the caller needs bumper events
     const bumperCb = callbacks.onBumperHit;
     if (bumperCb) {
       unsubs.push(
@@ -64,6 +66,7 @@ export function createRendererOrchestrator(
       source.start();
     },
     stop(): void {
+      // invoke every unsubscribe function to avoid memory leaks
       for (const u of unsubs) u();
       unsubs.length = 0;
       source.stop();
